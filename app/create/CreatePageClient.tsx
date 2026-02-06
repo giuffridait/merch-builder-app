@@ -57,6 +57,7 @@ export default function CreatePage() {
     charcoal: { name: 'Charcoal', hex: '#4a4a4a' },
     natural: { name: 'Natural', hex: '#f5f1e8' },
     red: { name: 'Red', hex: '#e4002b' },
+    pink: { name: 'Pink', hex: '#ff6fb1' },
     blue: { name: 'Blue', hex: '#2f6fed' },
     green: { name: 'Green', hex: '#2d9d78' }
   };
@@ -762,7 +763,7 @@ export default function CreatePage() {
                   <div>
                     <label className="block text-sm font-medium mb-2">Text color</label>
                     <div className="flex gap-2 flex-wrap">
-                      {['Black', 'White', 'Red', 'Navy', 'Burgundy', 'Forest'].map((name) => {
+                      {['Black', 'White', 'Red', 'Pink', 'Navy', 'Burgundy', 'Forest'].map((name) => {
                         const swatch = COLOR_MAP[name.toLowerCase()];
                         return (
                           <button
