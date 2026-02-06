@@ -134,7 +134,7 @@ async function getLLMResponse(
     { role: 'system', content: systemPrompt },
     ...messages.map(m => ({ role: m.role, content: m.content })),
     { role: 'user', content: userMessage }
-  ] as const;
+  ];
 
   const raw = await chatCompletion(llmMessages);
   const parsed = extractJson(raw) as LLMResult | null;
