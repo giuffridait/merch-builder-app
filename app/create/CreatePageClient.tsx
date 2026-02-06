@@ -191,82 +191,7 @@ export default function CreatePage() {
 
     setIsTyping(true);
 
-    const isAddToCartIntent = /add to cart|checkout|ready to buy|buy now/i.test(userMessage);
-
-    if (state.product) {
-      const responses: string[] = [];
-      const mentionsText = /text|letters|word|phrase|font|print|design|logo/.test(userMessage.toLowerCase())
-        || /"[^"]+"/.test(userMessage);
-      const mentionsProductColor = /make it|make the|hoodie|tee|tote|bag|mug|shirt|color|colour/.test(
-        userMessage.toLowerCase()
-      );
-
-      if (mentionsText) {
-        const requestedTextColor = extractTextColor(userMessage);
-        if (requestedTextColor) {
-          setTextColor(requestedTextColor);
-          setTextColorAuto(false);
-          responses.push(`Text color set to ${requestedTextColor.name}.`);
-        }
-      }
-
-      const colorRequest = extractRequestedColor(userMessage, state.product.colors);
-      if (colorRequest && (!mentionsText || mentionsProductColor)) {
-        if (colorRequest.match) {
-          setSelectedColor(colorRequest.match);
-          responses.push(`Got it — switching to ${colorRequest.match.name}.`);
-        } else {
-          responses.push(
-            `We don’t have ${colorRequest.requested} for ${state.product.name}. Available colors: ${state.product.colors.map(c => c.name).join(', ')}.`
-          );
-          addMessage('assistant', responses.join(' '));
-          setIsTyping(false);
-          return;
-        }
-      }
-
-      const sizeRequest = extractRequestedSize(userMessage, state.product.sizes);
-      if (sizeRequest) {
-        if (state.product.sizes?.includes(sizeRequest)) {
-          setSelectedSize(sizeRequest);
-          responses.push(`Size set to ${sizeRequest}.`);
-        } else {
-          responses.push(
-            `That size isn’t available. Sizes: ${(state.product.sizes || []).join(', ')}.`
-          );
-          addMessage('assistant', responses.join(' '));
-          setIsTyping(false);
-          return;
-        }
-      }
-
-      const qtyRequest = extractQuantity(userMessage);
-      if (qtyRequest && qtyRequest > 0) {
-        setQuantity(qtyRequest);
-        responses.push(`Quantity set to ${qtyRequest}.`);
-      }
-
-      if (isMaterialQuestion(userMessage)) {
-        responses.push('Materials are fixed for this product. You can choose color and size.');
-        addMessage('assistant', responses.join(' '));
-        setIsTyping(false);
-        return;
-      }
-
-      if (responses.length > 0) {
-        addMessage('assistant', responses.join(' '));
-      }
-    }
-
-    if (isAddToCartIntent) {
-      setIsTyping(false);
-      if (!selectedColor || !state.text) {
-        addMessage('assistant', 'To add to cart, please add a short text and choose a product color.');
-        return;
-      }
-      handleAddToCart();
-      return;
-    }
+    // Agentic v2: no client-side parsing. All updates are driven by the LLM.
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), requestTimeoutMs);
@@ -337,6 +262,12 @@ export default function CreatePage() {
 
       const newState = { ...state, ...updates };
       setState(newState);
+
+      if (updates.action === 'add_to_cart') {
+        handleAddToCart();
+        setIsTyping(false);
+        return;
+      }
 
       if (updates.productColor && newState.product) {
         const match = newState.product.colors.find(
@@ -454,6 +385,13 @@ export default function CreatePage() {
 
           const newState = { ...state, ...mergedUpdates };
           setState(prev => ({ ...prev, ...mergedUpdates }));
+
+          if (mergedUpdates.action === 'add_to_cart') {
+            handleAddToCart();
+            setIsTyping(false);
+            clearInterval(streamTimeout);
+            return;
+          }
 
           if (mergedUpdates.productColor && newState.product) {
             const match = newState.product.colors.find(

@@ -36,6 +36,7 @@ type LLMResult = {
     textColor?: string;
     size?: string;
     quantity?: number;
+    action?: 'add_to_cart';
   };
 };
 
@@ -50,7 +51,7 @@ function buildSystemPrompt(state: ConversationState) {
     'Keep responses concise, helpful, and action-oriented.',
     'Avoid excessive confirmations. Ask only one question at a time.',
     'Return ONLY a JSON object with this shape:',
-    '{ "assistant": string, "updates": { "stage"?: string, "productId"?: string, "occasion"?: string, "vibe"?: string, "text"?: string, "iconId"?: string, "productColor"?: string, "textColor"?: string, "size"?: string, "quantity"?: number } }',
+    '{ "assistant": string, "updates": { "stage"?: string, "productId"?: string, "occasion"?: string, "vibe"?: string, "text"?: string, "iconId"?: string, "productColor"?: string, "textColor"?: string, "size"?: string, "quantity"?: number, "action"?: "add_to_cart" } }',
     'Do not include markdown or code fences.',
     'Only use productId and iconId values from the provided lists.',
     'Use the current state to decide the next stage. Progression is: welcome -> product -> intent -> text -> icon -> preview.',
@@ -60,6 +61,7 @@ function buildSystemPrompt(state: ConversationState) {
     `Allowed text colors: ${textColors.join(', ')}.`,
     'productColor must be a color that exists on the chosen product.',
     'If a user requests a text color, set textColor (not productColor) unless they explicitly mention the product color.',
+    'If the user says "add to cart" or "checkout", set action to "add_to_cart".',
     'If you cannot confidently extract a value, leave it out.',
     `Current state: ${JSON.stringify(stateSummary)}`,
     `Products: ${JSON.stringify(products)}`,

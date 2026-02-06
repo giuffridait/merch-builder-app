@@ -35,6 +35,7 @@ export type CustomizationUpdates = {
   textColor?: string;
   size?: string;
   quantity?: number;
+  action?: 'add_to_cart';
 };
 
 export function normalizeText(text?: string) {
