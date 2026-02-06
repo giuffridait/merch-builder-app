@@ -1,0 +1,606 @@
+[
+  {
+    "item_id": "classic-tee",
+    "title": "Classic Tee",
+    "description": "Soft everyday tee with a classic fit.",
+    "url": "/products/classic-tee",
+    "image_url": "/images/products/classic-tee.png",
+    "price": {
+      "amount": 19.99,
+      "currency": "EUR"
+    },
+    "availability": "in stock",
+    "is_eligible_search": true,
+    "is_eligible_checkout": true,
+    "attributes": {
+      "category": "tee",
+      "materials": [
+        "cotton"
+      ],
+      "lead_time_days": 7,
+      "min_qty": 1,
+      "tags": [
+        "everyday",
+        "gift",
+        "team",
+        "event"
+      ],
+      "variants": {
+        "sizes": [
+          "XS",
+          "S",
+          "M",
+          "L",
+          "XL",
+          "2XL"
+        ],
+        "colors": [
+          {
+            "name": "Black",
+            "hex": "#1a1a1a"
+          },
+          {
+            "name": "White",
+            "hex": "#f5f5f5"
+          },
+          {
+            "name": "Navy",
+            "hex": "#1e3a5f"
+          },
+          {
+            "name": "Forest",
+            "hex": "#2d5016"
+          },
+          {
+            "name": "Burgundy",
+            "hex": "#6b1f3a"
+          }
+        ]
+      }
+    },
+    "image_url_by_variant": {
+      "black|cotton": "/images/products/classic-tee-black-cotton.png",
+      "white|cotton": "/images/products/classic-tee-white-cotton.png",
+      "navy|cotton": "/images/products/classic-tee-navy-cotton.png",
+      "forest|cotton": "/images/products/classic-tee-forest-cotton.png",
+      "burgundy|cotton": "/images/products/classic-tee-burgundy-cotton.png"
+    }
+  },
+  {
+    "item_id": "premium-tee",
+    "title": "Premium Tee",
+    "description": "Heavyweight premium cotton tee with a soft hand feel.",
+    "url": "/products/premium-tee",
+    "image_url": "/images/products/premium-tee.png",
+    "price": {
+      "amount": 27.99,
+      "currency": "EUR"
+    },
+    "availability": "in stock",
+    "is_eligible_search": true,
+    "is_eligible_checkout": true,
+    "attributes": {
+      "category": "tee",
+      "materials": [
+        "premium-cotton"
+      ],
+      "lead_time_days": 8,
+      "min_qty": 1,
+      "tags": [
+        "premium",
+        "gift",
+        "team"
+      ],
+      "variants": {
+        "sizes": [
+          "XS",
+          "S",
+          "M",
+          "L",
+          "XL",
+          "2XL"
+        ],
+        "colors": [
+          {
+            "name": "White",
+            "hex": "#ffffff"
+          },
+          {
+            "name": "Black",
+            "hex": "#1a1a1a"
+          },
+          {
+            "name": "Charcoal",
+            "hex": "#4a4a4a"
+          },
+          {
+            "name": "Navy",
+            "hex": "#1e3a5f"
+          }
+        ]
+      }
+    },
+    "image_url_by_variant": {
+      "white|premium-cotton": "/images/products/premium-tee-white-premium-cotton.png",
+      "black|premium-cotton": "/images/products/premium-tee-black-premium-cotton.png",
+      "charcoal|premium-cotton": "/images/products/premium-tee-charcoal-premium-cotton.png",
+      "navy|premium-cotton": "/images/products/premium-tee-navy-premium-cotton.png"
+    }
+  },
+  {
+    "item_id": "eco-tee",
+    "title": "Eco Tee",
+    "description": "Organic cotton tee made with low-impact dyes.",
+    "url": "/products/eco-tee",
+    "image_url": "/images/products/eco-tee.png",
+    "price": {
+      "amount": 24.99,
+      "currency": "EUR"
+    },
+    "availability": "in stock",
+    "is_eligible_search": true,
+    "is_eligible_checkout": true,
+    "attributes": {
+      "category": "tee",
+      "materials": [
+        "organic",
+        "cotton"
+      ],
+      "lead_time_days": 9,
+      "min_qty": 1,
+      "tags": [
+        "eco",
+        "sustainable",
+        "gift"
+      ],
+      "variants": {
+        "sizes": [
+          "XS",
+          "S",
+          "M",
+          "L",
+          "XL",
+          "2XL"
+        ],
+        "colors": [
+          {
+            "name": "Natural",
+            "hex": "#f5f1e8"
+          },
+          {
+            "name": "White",
+            "hex": "#ffffff"
+          },
+          {
+            "name": "Forest",
+            "hex": "#2d5016"
+          }
+        ]
+      }
+    },
+    "image_url_by_variant": {
+      "natural|organic": "/images/products/eco-tee-natural-organic.png",
+      "natural|cotton": "/images/products/eco-tee-natural-cotton.png",
+      "white|organic": "/images/products/eco-tee-white-organic.png",
+      "white|cotton": "/images/products/eco-tee-white-cotton.png",
+      "forest|organic": "/images/products/eco-tee-forest-organic.png",
+      "forest|cotton": "/images/products/eco-tee-forest-cotton.png"
+    },
+    "availability_by_variant": {
+      "natural|cotton": "out of stock",
+      "white|cotton": "out of stock",
+      "forest|cotton": "out of stock"
+    }
+  },
+  {
+    "item_id": "hoodie",
+    "title": "Comfort Hoodie",
+    "description": "Warm, heavyweight hoodie for all seasons.",
+    "url": "/products/hoodie",
+    "image_url": "/images/products/hoodie.png",
+    "price": {
+      "amount": 39.99,
+      "currency": "EUR"
+    },
+    "availability": "in stock",
+    "is_eligible_search": true,
+    "is_eligible_checkout": true,
+    "attributes": {
+      "category": "hoodie",
+      "materials": [
+        "cotton",
+        "poly-blend"
+      ],
+      "lead_time_days": 10,
+      "min_qty": 1,
+      "tags": [
+        "cozy",
+        "gift",
+        "team"
+      ],
+      "variants": {
+        "sizes": [
+          "S",
+          "M",
+          "L",
+          "XL",
+          "2XL"
+        ],
+        "colors": [
+          {
+            "name": "Black",
+            "hex": "#1a1a1a"
+          },
+          {
+            "name": "Charcoal",
+            "hex": "#4a4a4a"
+          },
+          {
+            "name": "Navy",
+            "hex": "#1e3a5f"
+          },
+          {
+            "name": "Burgundy",
+            "hex": "#6b1f3a"
+          }
+        ]
+      }
+    },
+    "image_url_by_variant": {
+      "black|cotton": "/images/products/hoodie-black-cotton.png",
+      "black|poly-blend": "/images/products/hoodie-black-poly-blend.png",
+      "charcoal|cotton": "/images/products/hoodie-charcoal-cotton.png",
+      "charcoal|poly-blend": "/images/products/hoodie-charcoal-poly-blend.png",
+      "navy|cotton": "/images/products/hoodie-navy-cotton.png",
+      "navy|poly-blend": "/images/products/hoodie-navy-poly-blend.png",
+      "burgundy|cotton": "/images/products/hoodie-burgundy-cotton.png",
+      "burgundy|poly-blend": "/images/products/hoodie-burgundy-poly-blend.png"
+    }
+  },
+  {
+    "item_id": "premium-hoodie",
+    "title": "Premium Hoodie",
+    "description": "Ultra-soft fleece hoodie with a tailored fit.",
+    "url": "/products/premium-hoodie",
+    "image_url": "/images/products/premium-hoodie.png",
+    "price": {
+      "amount": 54.99,
+      "currency": "EUR"
+    },
+    "availability": "in stock",
+    "is_eligible_search": true,
+    "is_eligible_checkout": true,
+    "attributes": {
+      "category": "hoodie",
+      "materials": [
+        "premium-fleece",
+        "cotton"
+      ],
+      "lead_time_days": 12,
+      "min_qty": 1,
+      "tags": [
+        "premium",
+        "cozy",
+        "gift"
+      ],
+      "variants": {
+        "sizes": [
+          "S",
+          "M",
+          "L",
+          "XL",
+          "2XL"
+        ],
+        "colors": [
+          {
+            "name": "Black",
+            "hex": "#1a1a1a"
+          },
+          {
+            "name": "Navy",
+            "hex": "#1e3a5f"
+          },
+          {
+            "name": "Burgundy",
+            "hex": "#6b1f3a"
+          }
+        ]
+      }
+    },
+    "image_url_by_variant": {
+      "black|premium-fleece": "/images/products/premium-hoodie-black-premium-fleece.png",
+      "black|cotton": "/images/products/premium-hoodie-black-cotton.png",
+      "navy|premium-fleece": "/images/products/premium-hoodie-navy-premium-fleece.png",
+      "navy|cotton": "/images/products/premium-hoodie-navy-cotton.png",
+      "burgundy|premium-fleece": "/images/products/premium-hoodie-burgundy-premium-fleece.png",
+      "burgundy|cotton": "/images/products/premium-hoodie-burgundy-cotton.png"
+    }
+  },
+  {
+    "item_id": "eco-hoodie",
+    "title": "Eco Hoodie",
+    "description": "Recycled-blend hoodie with relaxed fit.",
+    "url": "/products/eco-hoodie",
+    "image_url": "/images/products/eco-hoodie.png",
+    "price": {
+      "amount": 44.99,
+      "currency": "EUR"
+    },
+    "availability": "in stock",
+    "is_eligible_search": true,
+    "is_eligible_checkout": true,
+    "attributes": {
+      "category": "hoodie",
+      "materials": [
+        "recycled",
+        "cotton"
+      ],
+      "lead_time_days": 11,
+      "min_qty": 1,
+      "tags": [
+        "eco",
+        "sustainable",
+        "team"
+      ],
+      "variants": {
+        "sizes": [
+          "S",
+          "M",
+          "L",
+          "XL",
+          "2XL"
+        ],
+        "colors": [
+          {
+            "name": "Natural",
+            "hex": "#f5f1e8"
+          },
+          {
+            "name": "Charcoal",
+            "hex": "#4a4a4a"
+          },
+          {
+            "name": "Forest",
+            "hex": "#2d5016"
+          }
+        ]
+      }
+    },
+    "image_url_by_variant": {
+      "natural|recycled": "/images/products/eco-hoodie-natural-recycled.png",
+      "natural|cotton": "/images/products/eco-hoodie-natural-cotton.png",
+      "charcoal|recycled": "/images/products/eco-hoodie-charcoal-recycled.png",
+      "charcoal|cotton": "/images/products/eco-hoodie-charcoal-cotton.png",
+      "forest|recycled": "/images/products/eco-hoodie-forest-recycled.png",
+      "forest|cotton": "/images/products/eco-hoodie-forest-cotton.png"
+    }
+  },
+  {
+    "item_id": "tote",
+    "title": "Canvas Tote",
+    "description": "Durable canvas tote for daily carry.",
+    "url": "/products/tote",
+    "image_url": "/images/products/tote.png",
+    "price": {
+      "amount": 14.99,
+      "currency": "EUR"
+    },
+    "availability": "in stock",
+    "is_eligible_search": true,
+    "is_eligible_checkout": true,
+    "attributes": {
+      "category": "tote",
+      "materials": [
+        "canvas"
+      ],
+      "lead_time_days": 5,
+      "min_qty": 1,
+      "tags": [
+        "eco",
+        "gift",
+        "everyday"
+      ],
+      "variants": {
+        "sizes": [],
+        "colors": [
+          {
+            "name": "Natural",
+            "hex": "#f5f1e8"
+          },
+          {
+            "name": "White",
+            "hex": "#ffffff"
+          },
+          {
+            "name": "Black",
+            "hex": "#1a1a1a"
+          }
+        ]
+      }
+    },
+    "image_url_by_variant": {
+      "natural|canvas": "/images/products/tote-natural-canvas.png",
+      "white|canvas": "/images/products/tote-white-canvas.png",
+      "black|canvas": "/images/products/tote-black-canvas.png"
+    }
+  },
+  {
+    "item_id": "eco-tote",
+    "title": "Eco Tote",
+    "description": "Recycled-fiber tote with sturdy handles.",
+    "url": "/products/eco-tote",
+    "image_url": "/images/products/eco-tote.png",
+    "price": {
+      "amount": 18.99,
+      "currency": "EUR"
+    },
+    "availability": "in stock",
+    "is_eligible_search": true,
+    "is_eligible_checkout": true,
+    "attributes": {
+      "category": "tote",
+      "materials": [
+        "recycled"
+      ],
+      "lead_time_days": 6,
+      "min_qty": 1,
+      "tags": [
+        "eco",
+        "gift",
+        "everyday"
+      ],
+      "variants": {
+        "sizes": [],
+        "colors": [
+          {
+            "name": "White",
+            "hex": "#ffffff"
+          },
+          {
+            "name": "Natural",
+            "hex": "#f5f1e8"
+          }
+        ]
+      }
+    },
+    "image_url_by_variant": {
+      "white|recycled": "/images/products/eco-tote-white-recycled.png",
+      "natural|recycled": "/images/products/eco-tote-natural-recycled.png"
+    }
+  },
+  {
+    "item_id": "premium-tote",
+    "title": "Premium Tote",
+    "description": "Heavyweight canvas tote with reinforced handles.",
+    "url": "/products/premium-tote",
+    "image_url": "/images/products/premium-tote.png",
+    "price": {
+      "amount": 24.99,
+      "currency": "EUR"
+    },
+    "availability": "in stock",
+    "is_eligible_search": true,
+    "is_eligible_checkout": true,
+    "attributes": {
+      "category": "tote",
+      "materials": [
+        "premium-canvas"
+      ],
+      "lead_time_days": 7,
+      "min_qty": 1,
+      "tags": [
+        "premium",
+        "gift",
+        "everyday"
+      ],
+      "variants": {
+        "sizes": [],
+        "colors": [
+          {
+            "name": "Black",
+            "hex": "#1a1a1a"
+          },
+          {
+            "name": "Natural",
+            "hex": "#f5f1e8"
+          }
+        ]
+      }
+    },
+    "image_url_by_variant": {
+      "black|premium-canvas": "/images/products/premium-tote-black-premium-canvas.png",
+      "natural|premium-canvas": "/images/products/premium-tote-natural-premium-canvas.png"
+    }
+  },
+  {
+    "item_id": "mug",
+    "title": "Ceramic Mug",
+    "description": "Classic ceramic mug for coffee or tea.",
+    "url": "/products/mug",
+    "image_url": "/images/products/mug.png",
+    "price": {
+      "amount": 12.99,
+      "currency": "EUR"
+    },
+    "availability": "in stock",
+    "is_eligible_search": true,
+    "is_eligible_checkout": true,
+    "attributes": {
+      "category": "mug",
+      "materials": [
+        "ceramic"
+      ],
+      "lead_time_days": 6,
+      "min_qty": 1,
+      "tags": [
+        "gift",
+        "office",
+        "everyday"
+      ],
+      "variants": {
+        "sizes": [],
+        "colors": [
+          {
+            "name": "White",
+            "hex": "#ffffff"
+          },
+          {
+            "name": "Black",
+            "hex": "#1a1a1a"
+          }
+        ]
+      }
+    },
+    "image_url_by_variant": {
+      "white|ceramic": "/images/products/mug-white-ceramic.png",
+      "black|ceramic": "/images/products/mug-black-ceramic.png"
+    }
+  },
+  {
+    "item_id": "premium-mug",
+    "title": "Premium Mug",
+    "description": "Thick-walled ceramic mug with matte finish.",
+    "url": "/products/premium-mug",
+    "image_url": "/images/products/premium-mug.png",
+    "price": {
+      "amount": 18.49,
+      "currency": "EUR"
+    },
+    "availability": "in stock",
+    "is_eligible_search": true,
+    "is_eligible_checkout": true,
+    "attributes": {
+      "category": "mug",
+      "materials": [
+        "ceramic",
+        "premium-glaze"
+      ],
+      "lead_time_days": 7,
+      "min_qty": 1,
+      "tags": [
+        "premium",
+        "gift",
+        "office"
+      ],
+      "variants": {
+        "sizes": [],
+        "colors": [
+          {
+            "name": "White",
+            "hex": "#ffffff"
+          },
+          {
+            "name": "Navy",
+            "hex": "#1e3a5f"
+          }
+        ]
+      }
+    },
+    "image_url_by_variant": {
+      "white|ceramic": "/images/products/premium-mug-white-ceramic.png",
+      "white|premium-glaze": "/images/products/premium-mug-white-premium-glaze.png",
+      "navy|ceramic": "/images/products/premium-mug-navy-ceramic.png",
+      "navy|premium-glaze": "/images/products/premium-mug-navy-premium-glaze.png"
+    }
+  }
+]
