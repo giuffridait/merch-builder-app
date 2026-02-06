@@ -26,7 +26,7 @@ function getConfig(): LLMConfig {
   }
 
   if (provider === 'groq') {
-    const model = process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
+    const model = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
     const baseUrl = process.env.GROQ_API_BASE || 'https://api.groq.com/openai/v1';
     const apiKey = process.env.GROQ_API_KEY;
     return { provider: 'groq', model, baseUrl, apiKey };
