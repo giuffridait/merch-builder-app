@@ -39,31 +39,39 @@ export default function CreatePage() {
   const [designs, setDesigns] = useState<DesignVariant[] | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<string | null>(null);
   const [selectedColor, setSelectedColor] = useState<any>(null);
+  const [textColor, setTextColor] = useState<{ name: string; hex: string } | null>(null);
+  const [textColorAuto, setTextColorAuto] = useState(true);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [fallbackNotice, setFallbackNotice] = useState(false);
   const requestTimeoutMs = 12000;
 
-  const COMMON_COLORS = [
-    'white',
-    'black',
-    'navy',
-    'forest',
-    'burgundy',
-    'charcoal',
-    'natural',
-    'red',
-    'blue',
-    'green'
-  ];
+  const COLOR_MAP: Record<string, { name: string; hex: string }> = {
+    white: { name: 'White', hex: '#ffffff' },
+    black: { name: 'Black', hex: '#111111' },
+    navy: { name: 'Navy', hex: '#1e3a5f' },
+    forest: { name: 'Forest', hex: '#2d5016' },
+    burgundy: { name: 'Burgundy', hex: '#6b1f3a' },
+    charcoal: { name: 'Charcoal', hex: '#4a4a4a' },
+    natural: { name: 'Natural', hex: '#f5f1e8' },
+    red: { name: 'Red', hex: '#e4002b' },
+    blue: { name: 'Blue', hex: '#2f6fed' },
+    green: { name: 'Green', hex: '#2d9d78' }
+  };
 
   const extractRequestedColor = (message: string, colors: { name: string; hex: string }[]) => {
     const text = message.toLowerCase();
-    const available = colors.map(c => c.name.toLowerCase());
-    const requested = COMMON_COLORS.find(color => text.includes(color));
+    const requested = Object.keys(COLOR_MAP).find(color => text.includes(color));
     if (!requested) return null;
     const match = colors.find(c => c.name.toLowerCase() === requested);
     return { requested, match };
+  };
+
+  const extractTextColor = (message: string) => {
+    const text = message.toLowerCase();
+    const requested = Object.keys(COLOR_MAP).find(color => text.includes(color));
+    if (!requested) return null;
+    return COLOR_MAP[requested];
   };
 
   const extractRequestedSize = (message: string, sizes: string[] | null) => {
@@ -115,6 +123,17 @@ export default function CreatePage() {
   }, [state.product]);
 
   useEffect(() => {
+    if (!selectedColor) return;
+    if (!textColor || textColorAuto) {
+      const auto = getContrastColor(selectedColor.hex);
+      setTextColor(auto === '#1a1a1a'
+        ? { name: 'Black', hex: '#1a1a1a' }
+        : { name: 'White', hex: '#ffffff' });
+      setTextColorAuto(true);
+    }
+  }, [selectedColor]);
+
+  useEffect(() => {
     const productId = searchParams.get('product');
     if (!productId) return;
     const product = PRODUCTS.find(p => p.id === productId);
@@ -151,8 +170,20 @@ export default function CreatePage() {
 
     if (state.product) {
       const responses: string[] = [];
+      const mentionsText = /text|letters|word|phrase|font|print|design|logo/.test(userMessage.toLowerCase())
+        || /"[^"]+"/.test(userMessage);
+
+      if (mentionsText) {
+        const requestedTextColor = extractTextColor(userMessage);
+        if (requestedTextColor) {
+          setTextColor(requestedTextColor);
+          setTextColorAuto(false);
+          responses.push(`Text color set to ${requestedTextColor.name}.`);
+        }
+      }
+
       const colorRequest = extractRequestedColor(userMessage, state.product.colors);
-      if (colorRequest) {
+      if (colorRequest && !mentionsText) {
         if (colorRequest.match) {
           setSelectedColor(colorRequest.match);
           responses.push(`Got it — switching to ${colorRequest.match.name}.`);
@@ -419,6 +450,7 @@ export default function CreatePage() {
       productId: state.product.id,
       productName: state.product.name,
       color: selectedColor,
+      textColor: textColor || undefined,
       size: selectedSize,
       quantity,
       variant: selectedVariant,
@@ -596,7 +628,7 @@ export default function CreatePage() {
                         top: `${state.product.printArea.y}%`,
                         width: `${state.product.printArea.w}%`,
                         height: `${state.product.printArea.h}%`,
-                        color: getContrastColor(selectedColor?.hex || '#ffffff')
+                        color: textColor?.hex || getContrastColor(selectedColor?.hex || '#ffffff')
                       }}
                       dangerouslySetInnerHTML={{
                         __html: designs.find(v => v.id === selectedVariant)?.svg || ''
@@ -630,6 +662,10 @@ export default function CreatePage() {
                   <div className="rounded-xl border border-[#e4e4e4] px-4 py-3">
                     <div className="text-xs text-[#6b6b6b]">Text</div>
                     <div className="font-medium">{state.text ? `"${state.text}"` : 'Add text'}</div>
+                  </div>
+                  <div className="rounded-xl border border-[#e4e4e4] px-4 py-3">
+                    <div className="text-xs text-[#6b6b6b]">Text color</div>
+                    <div className="font-medium">{textColor?.name || 'Auto'}</div>
                   </div>
                 </div>
               )}
@@ -689,6 +725,29 @@ export default function CreatePage() {
                           title={color.name}
                         />
                       ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Text color</label>
+                    <div className="flex gap-2 flex-wrap">
+                      {['Black', 'White', 'Red', 'Navy', 'Burgundy', 'Forest'].map((name) => {
+                        const swatch = COLOR_MAP[name.toLowerCase()];
+                        return (
+                          <button
+                            key={name}
+                            onClick={() => {
+                              setTextColor(swatch);
+                              setTextColorAuto(false);
+                            }}
+                            className={`w-10 h-10 rounded-full border-2 transition-all ${
+                              textColor?.name === name ? 'border-[#e4002b]' : 'border-[#e4e4e4]'
+                            }`}
+                            style={{ backgroundColor: swatch.hex }}
+                            title={name}
+                          />
+                        );
+                      })}
                     </div>
                   </div>
 

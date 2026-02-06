@@ -3,6 +3,7 @@ export interface CartItem {
   productId: string;
   productName: string;
   color: { name: string; hex: string };
+  textColor?: { name: string; hex: string };
   size: string | null;
   quantity: number;
   variant: string;

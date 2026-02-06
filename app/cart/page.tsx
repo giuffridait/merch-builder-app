@@ -112,6 +112,7 @@ export default function CartPage() {
                         <h3 className="font-bold text-lg">{item.productName}</h3>
                         <div className="text-sm text-[#6b6b6b] space-y-1 mt-1">
                           <div>Variant {item.variant} • {item.color.name}</div>
+                          {item.textColor && <div>Text color: {item.textColor.name}</div>}
                           {item.size && <div>Size: {item.size}</div>}
                           <div className="italic">"{item.text}"</div>
                         </div>
