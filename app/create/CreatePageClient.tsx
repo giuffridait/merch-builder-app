@@ -564,10 +564,10 @@ export default function CreatePage() {
         </div>
       </header>
 
-      <div className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid lg:grid-cols-2 gap-8 h-full">
+      <div className="flex-1 max-w-6xl mx-auto w-full px-6 py-10 pb-40">
+        <div className="grid lg:grid-cols-[360px_1fr] gap-10 h-full">
           {/* Left: Chat */}
-          <div className="flex flex-col h-[calc(100vh-12rem)]">
+          <div className="flex flex-col">
             {/* Messages */}
             <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2">
               {state.messages.map((message) => (
