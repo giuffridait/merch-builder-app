@@ -684,6 +684,8 @@ export default function CreatePage() {
                         color: textColor?.hex || getContrastColor(selectedColor?.hex || '#ffffff'),
                         fontWeight: 700,
                         fontSize: '1.4rem',
+                        transform: `translate(${designOffset.x}px, ${designOffset.y}px) scale(${designScale})`,
+                        transformOrigin: 'center',
                         textTransform: 'uppercase'
                       }}
                     >
@@ -819,7 +821,7 @@ export default function CreatePage() {
                       <input
                         type="range"
                         min="0.6"
-                        max="1.2"
+                        max="1.0"
                         step="0.05"
                         value={designScale}
                         onChange={(e) => setDesignScale(parseFloat(e.target.value))}
