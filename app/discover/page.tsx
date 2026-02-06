@@ -122,7 +122,7 @@ export default function DiscoverPage() {
     if (!isStream || !res.body) {
       const fallback = await res.json();
       setFallbackNotice(!!fallback.fallbackUsed);
-      const updates = fallback.updates as Partial<DiscoverConstraints>;
+      const updates = fallback.updates as Partial<DiscoverConstraints & { stage?: DiscoverState['stage'] }>;
       setState(prev => ({
         ...prev,
         constraints: { ...prev.constraints, ...updates },
