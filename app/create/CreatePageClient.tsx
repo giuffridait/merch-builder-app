@@ -171,6 +171,8 @@ export default function CreatePage() {
 
     setIsTyping(true);
 
+    const isAddToCartIntent = /add to cart|checkout|ready to buy|buy now/i.test(userMessage);
+
     if (state.product) {
       const responses: string[] = [];
       const mentionsText = /text|letters|word|phrase|font|print|design|logo/.test(userMessage.toLowerCase())
@@ -231,6 +233,16 @@ export default function CreatePage() {
       if (responses.length > 0) {
         addMessage('assistant', responses.join(' '));
       }
+    }
+
+    if (isAddToCartIntent) {
+      setIsTyping(false);
+      if (!designs || !selectedVariant || !selectedColor || !state.text || !state.icon) {
+        addMessage('assistant', 'To add to cart, please finish the design: add text + icon and pick a variant.');
+        return;
+      }
+      handleAddToCart();
+      return;
     }
 
     const controller = new AbortController();
