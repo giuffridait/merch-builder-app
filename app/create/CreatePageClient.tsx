@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ShoppingCart, Send, Sparkles, Loader2, Check } from 'lucide-react';
 import { PRODUCTS, PRINT_FEE, Product } from '@/lib/catalog';
-import { findIconByKeyword } from '@/lib/icons';
+import { findIconByKeyword, ICON_LIBRARY } from '@/lib/icons';
 import { generateVariants, getContrastColor, DesignVariant } from '@/lib/design';
 import { addToCart, getCart } from '@/lib/cart';
 import {
@@ -45,6 +45,7 @@ export default function CreatePage() {
   const [quantity, setQuantity] = useState(1);
   const [designScale, setDesignScale] = useState(1);
   const [designOffset, setDesignOffset] = useState({ x: 0, y: 0 });
+  const lastGeneratedRef = useRef<string>('');
   const [fallbackNotice, setFallbackNotice] = useState(false);
   const requestTimeoutMs = 12000;
 
@@ -75,6 +76,11 @@ export default function CreatePage() {
     const requested = Object.keys(COLOR_MAP).find(color => text.includes(color));
     if (!requested) return null;
     return COLOR_MAP[requested];
+  };
+
+  const getIconById = (id?: string) => {
+    if (!id) return null;
+    return ICON_LIBRARY.find(icon => icon.id === id) || null;
   };
 
   const extractRequestedSize = (message: string, sizes: string[] | null) => {
@@ -135,6 +141,20 @@ export default function CreatePage() {
       setTextColorAuto(true);
     }
   }, [selectedColor]);
+
+  useEffect(() => {
+    if (!state.text || !state.product) return;
+    const key = `${state.text}|${state.icon || 'default'}|${state.vibe || ''}|${state.occasion || ''}`;
+    if (lastGeneratedRef.current === key) return;
+
+    const icon = getIconById(state.icon) || ICON_LIBRARY.find(i => i.id === 'star') || ICON_LIBRARY[0];
+    const generated = generateVariants(state.text, icon, state.vibe, state.occasion);
+    setDesigns(generated.variants);
+    if (!selectedVariant || !generated.variants.find(v => v.id === selectedVariant)) {
+      setSelectedVariant(generated.recommended);
+    }
+    lastGeneratedRef.current = key;
+  }, [state.text, state.icon, state.vibe, state.occasion, state.product, selectedVariant]);
 
   useEffect(() => {
     const productId = searchParams.get('product');
