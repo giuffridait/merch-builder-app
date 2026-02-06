@@ -729,14 +729,16 @@ export default function CreatePage() {
             </div>
 
             {/* Design Variants */}
-            {designs && state.stage === 'preview' && (
+            {state.text && state.product && (
               <div className="space-y-4 animate-fadeIn">
                 <h3 className="text-sm font-medium text-[#6b6b6b]">DESIGN VARIANTS</h3>
                 <div className="text-xs text-[#6b6b6b]">
-                  Pick a variant once you’ve provided text and icon. Or skip this and add text‑only.
+                  {designs
+                    ? 'Pick a variant or skip to keep text‑only.'
+                    : 'Add an icon to generate design variants, or continue with text‑only.'}
                 </div>
                 <div className="grid sm:grid-cols-3 gap-3">
-                  {designs.map((variant) => (
+                  {(designs || []).map((variant) => (
                     <button
                       key={variant.id}
                       onClick={() => setSelectedVariant(variant.id)}
@@ -746,11 +748,11 @@ export default function CreatePage() {
                           : 'border-[#e4e4e4] bg-white hover:border-[#cfcfcf]'
                       }`}
                     >
-                      <div className="h-28 rounded-xl bg-[#f7f7f7] border border-[#e4e4e4] flex items-center justify-center mb-3">
-                        <div
-                          className="w-20 h-20"
-                          style={{ color: getContrastColor(selectedColor?.hex || '#ffffff') }}
-                          dangerouslySetInnerHTML={{ __html: variant.svg }}
+                        <div className="h-28 rounded-xl bg-[#f7f7f7] border border-[#e4e4e4] flex items-center justify-center mb-3">
+                          <div
+                            className="w-20 h-20"
+                            style={{ color: getContrastColor(selectedColor?.hex || '#ffffff') }}
+                            dangerouslySetInnerHTML={{ __html: variant.svg }}
                         />
                       </div>
                       <div className="text-sm font-semibold">Variant {variant.id}</div>
@@ -817,7 +819,7 @@ export default function CreatePage() {
                       <input
                         type="range"
                         min="0.6"
-                        max="2.2"
+                        max="1.2"
                         step="0.05"
                         value={designScale}
                         onChange={(e) => setDesignScale(parseFloat(e.target.value))}
