@@ -25,8 +25,8 @@ export type ACPItem = {
   description: string;
   url: string;
   image_url: string;
-  image_url_by_variant?: Record<string, string>;
-  availability_by_variant?: Record<string, string>;
+  image_url_by_variant?: Record<string, string | undefined>;
+  availability_by_variant?: Record<string, string | undefined>;
   price: ACPPrice;
   availability: 'in stock' | 'out of stock' | 'preorder';
   availability_date?: string;
