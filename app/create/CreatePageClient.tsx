@@ -43,6 +43,8 @@ export default function CreatePage() {
   const [textColorAuto, setTextColorAuto] = useState(true);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
+  const [designScale, setDesignScale] = useState(1);
+  const [designOffset, setDesignOffset] = useState({ x: 0, y: 0 });
   const [fallbackNotice, setFallbackNotice] = useState(false);
   const requestTimeoutMs = 12000;
 
@@ -628,7 +630,9 @@ export default function CreatePage() {
                         top: `${state.product.printArea.y}%`,
                         width: `${state.product.printArea.w}%`,
                         height: `${state.product.printArea.h}%`,
-                        color: textColor?.hex || getContrastColor(selectedColor?.hex || '#ffffff')
+                        color: textColor?.hex || getContrastColor(selectedColor?.hex || '#ffffff'),
+                        transform: `translate(${designOffset.x}px, ${designOffset.y}px) scale(${designScale})`,
+                        transformOrigin: 'center'
                       }}
                       dangerouslySetInnerHTML={{
                         __html: designs.find(v => v.id === selectedVariant)?.svg || ''
@@ -748,6 +752,51 @@ export default function CreatePage() {
                           />
                         );
                       })}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Design scale</label>
+                      <input
+                        type="range"
+                        min="0.6"
+                        max="1.4"
+                        step="0.05"
+                        value={designScale}
+                        onChange={(e) => setDesignScale(parseFloat(e.target.value))}
+                        className="w-full accent-[#e4002b]"
+                      />
+                      <div className="text-xs text-[#6b6b6b] mt-1">{designScale.toFixed(2)}x</div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Position</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <input
+                            type="range"
+                            min="-30"
+                            max="30"
+                            step="1"
+                            value={designOffset.x}
+                            onChange={(e) => setDesignOffset(prev => ({ ...prev, x: parseInt(e.target.value, 10) }))}
+                            className="w-full accent-[#e4002b]"
+                          />
+                          <div className="text-xs text-[#6b6b6b] mt-1">X {designOffset.x}px</div>
+                        </div>
+                        <div>
+                          <input
+                            type="range"
+                            min="-30"
+                            max="30"
+                            step="1"
+                            value={designOffset.y}
+                            onChange={(e) => setDesignOffset(prev => ({ ...prev, y: parseInt(e.target.value, 10) }))}
+                            className="w-full accent-[#e4002b]"
+                          />
+                          <div className="text-xs text-[#6b6b6b] mt-1">Y {designOffset.y}px</div>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
