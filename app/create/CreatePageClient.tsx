@@ -240,8 +240,8 @@ export default function CreatePage() {
 
     if (isAddToCartIntent) {
       setIsTyping(false);
-      if (!designs || !selectedVariant || !selectedColor || !state.text || !state.icon) {
-        addMessage('assistant', 'To add to cart, please finish the design: add text + icon and pick a variant.');
+      if (!selectedColor || !state.text) {
+        addMessage('assistant', 'To add to cart, please add a short text and choose a product color.');
         return;
       }
       handleAddToCart();
@@ -456,15 +456,25 @@ export default function CreatePage() {
     }, 100);
   };
 
+  const buildTextOnlySVG = (text: string) => `
+    <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+      <text x="200" y="210" font-family="'Helvetica Neue', sans-serif" font-size="56" font-weight="700" text-anchor="middle" fill="currentColor" letter-spacing="1">
+        ${text.toUpperCase()}
+      </text>
+    </svg>
+  `;
+
   const handleAddToCart = () => {
     if (!state.product) return;
-    if (!designs || !selectedVariant || !selectedColor || !state.text || !state.icon) {
-      addMessage('assistant', 'Finish the design steps first (text + icon), then pick a variant before adding to cart.');
+    if (!selectedColor || !state.text) {
+      addMessage('assistant', 'Add a short text and choose a product color to add this to cart.');
       return;
     }
 
-    const variant = designs.find(v => v.id === selectedVariant);
-    if (!variant) return;
+    const fallbackVariantId = designs?.[0]?.id || 'Text';
+    const activeVariantId = selectedVariant || fallbackVariantId;
+    const variant = designs?.find(v => v.id === activeVariantId);
+    const designSvg = variant?.svg || buildTextOnlySVG(state.text);
 
     const itemPrice = state.product.basePrice + PRINT_FEE;
     
@@ -475,10 +485,10 @@ export default function CreatePage() {
       textColor: textColor || undefined,
       size: selectedSize,
       quantity,
-      variant: selectedVariant,
-      designSVG: variant.svg,
+      variant: activeVariantId,
+      designSVG: designSvg,
       text: state.text!,
-      icon: state.icon!,
+      icon: state.icon || 'none',
       price: itemPrice,
       total: itemPrice * quantity,
       currency: 'EUR',
@@ -878,15 +888,15 @@ export default function CreatePage() {
 
                   <button
                     onClick={handleAddToCart}
-                    disabled={!designs || !selectedVariant || !selectedColor || !state.text || !state.icon}
+                    disabled={!selectedColor || !state.text}
                     className="w-full py-4 rounded-xl bg-gradient-to-r from-[#e4002b] to-[#ff6b6b] hover:opacity-90 transition-all font-bold text-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <ShoppingCart size={20} />
                     Add to Cart • €{((state.product!.basePrice + PRINT_FEE) * quantity).toFixed(2)}
                   </button>
-                  {(!designs || !selectedVariant || !state.text || !state.icon) && (
+                  {(!selectedColor || !state.text) && (
                     <div className="text-xs text-[#6b6b6b]">
-                      Add text and icon, then select a variant to enable add to cart.
+                      Add a short text and choose a product color to enable add to cart.
                     </div>
                   )}
                   <div className="text-xs text-[#6b6b6b]">
