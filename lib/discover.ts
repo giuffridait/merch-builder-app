@@ -37,7 +37,7 @@ const OCCASION_KEYWORDS: Record<NonNullable<DiscoverConstraints['occasion']>, st
 
 const MATERIAL_KEYWORDS = ['cotton', 'canvas', 'ceramic', 'organic', 'recycled', 'poly', 'polyester'];
 const TAG_KEYWORDS = ['eco', 'sustainable', 'minimal', 'bold', 'retro', 'cute', 'sporty'];
-const COLOR_KEYWORDS = ['white', 'black', 'navy', 'forest', 'burgundy', 'natural', 'charcoal'];
+const COLOR_KEYWORDS = ['white', 'black', 'navy', 'forest', 'burgundy', 'natural', 'charcoal', 'red'];
 const SIZE_KEYWORDS = ['xs', 's', 'm', 'l', 'xl', '2xl'];
 
 export function isMaterialsQuestion(message: string) {

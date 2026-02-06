@@ -46,7 +46,7 @@ function buildSystemPrompt(state: DiscoverState, candidates: ReturnType<typeof g
     '{ "assistant": string, "updates": { "stage"?: string, "category"?: string, "budgetMax"?: number, "materials"?: string[], "sustainable"?: boolean, "quantity"?: number, "eventDate"?: string, "tags"?: string[], "occasion"?: string, "color"?: string, "leadTimeMax"?: number, "size"?: string }, "selection": { "primaryIds"?: string[], "fallbackIds"?: string[], "rationale"?: string } }',
     'Do not include markdown or code fences.',
     'Only use categories: tee, hoodie, tote, mug.',
-    'Only use colors: white, black, navy, forest, burgundy, natural, charcoal.',
+    'Only use colors: white, black, navy, forest, burgundy, natural, charcoal, red.',
     'Only use sizes: XS, S, M, L, XL, 2XL.',
     'Only choose item_id values that exist in Inventory.',
     'Prefer 1 primary item and up to 2 fallback items.',
@@ -93,7 +93,7 @@ function normalizeUpdates(raw: LLMResult['updates']): Partial<DiscoverConstraint
   if (typeof raw.quantity === 'number') updates.quantity = raw.quantity;
   if (typeof raw.eventDate === 'string') updates.eventDate = raw.eventDate;
   if (Array.isArray(raw.tags)) updates.tags = raw.tags;
-  if (raw.color && ['white', 'black', 'navy', 'forest', 'burgundy', 'natural', 'charcoal'].includes(raw.color)) {
+  if (raw.color && ['white', 'black', 'navy', 'forest', 'burgundy', 'natural', 'charcoal', 'red'].includes(raw.color)) {
     updates.color = raw.color;
   }
   if (raw.occasion && ['gift', 'team', 'event', 'personal'].includes(raw.occasion)) {
