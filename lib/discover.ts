@@ -148,10 +148,7 @@ export function filterInventory(items: ACPItem[], constraints: DiscoverConstrain
       if (!hasAny) return false;
     }
 
-    if (constraints.tags && constraints.tags.length > 0) {
-      const hasAny = constraints.tags.some(t => item.attributes.tags.includes(t));
-      if (!hasAny) return false;
-    }
+    // Tags are treated as soft preferences; do not hard-filter on them.
 
     if (constraints.leadTimeMax != null && item.attributes.lead_time_days > constraints.leadTimeMax) {
       return false;
