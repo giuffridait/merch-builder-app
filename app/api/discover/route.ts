@@ -201,7 +201,8 @@ export async function POST(req: NextRequest) {
     const candidates = filterInventory(getInventory(), candidateConstraints);
     const llm = await getLLMResponse(userMessage, state, candidates);
     const llmUpdates = llm?.updates || {};
-    const updates = { ...parsedUpdates, ...llmUpdates };
+    // User-parsed constraints should take precedence over model guesses.
+    const updates = { ...llmUpdates, ...parsedUpdates };
     const newConstraints = { ...state.constraints, ...updates };
     const stage = updates.stage || (state.stage === 'welcome' ? 'constraints' : state.stage);
     let results = rankInventory(newConstraints);
@@ -220,6 +221,11 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const assistantMessage =
+      results.length > 0
+        ? (llm?.assistantMessage || 'Here are the best matches based on your constraints.')
+        : (llm?.assistantMessage || 'Tell me what you need (budget, material, quantity, timing). I’ll shortlist the best products.');
+
     if (stream) {
       const encoder = new TextEncoder();
       const streamResponse = new ReadableStream({
@@ -232,7 +238,6 @@ export async function POST(req: NextRequest) {
           send('updates', { ...updates, stage });
           send('results', results.map(item => ({ ...item, reason: rationale || item.reason })));
 
-          const assistantMessage = llm?.assistantMessage || 'Here are the best matches based on your constraints.';
           const chunks = assistantMessage.match(/.{1,16}/g) || [];
           for (const part of chunks) send('delta', part);
 
@@ -251,7 +256,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({
-      assistantMessage: llm?.assistantMessage || 'Here are the best matches based on your constraints.',
+      assistantMessage,
       updates: { ...updates, stage },
       results: results.map(item => ({ ...item, reason: rationale || item.reason }))
     });
