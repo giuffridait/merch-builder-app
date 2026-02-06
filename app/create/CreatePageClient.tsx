@@ -30,7 +30,7 @@ export default function CreatePage() {
       {
         id: '1',
         role: 'assistant',
-        content: "Hey! 👋 I'm here to help you create custom merch. Let's start simple - what would you like to make? Just tell me like: \"I want a tee for my friend's birthday\" or \"Hoodie for my running team.\"",
+        content: "What would you like to make? A tee, hoodie, tote, or mug?",
         timestamp: Date.now()
       }
     ]
@@ -43,6 +43,50 @@ export default function CreatePage() {
   const [quantity, setQuantity] = useState(1);
   const [fallbackNotice, setFallbackNotice] = useState(false);
   const requestTimeoutMs = 12000;
+
+  const COMMON_COLORS = [
+    'white',
+    'black',
+    'navy',
+    'forest',
+    'burgundy',
+    'charcoal',
+    'natural',
+    'red',
+    'blue',
+    'green'
+  ];
+
+  const extractRequestedColor = (message: string, colors: { name: string; hex: string }[]) => {
+    const text = message.toLowerCase();
+    const available = colors.map(c => c.name.toLowerCase());
+    const requested = COMMON_COLORS.find(color => text.includes(color));
+    if (!requested) return null;
+    const match = colors.find(c => c.name.toLowerCase() === requested);
+    return { requested, match };
+  };
+
+  const extractRequestedSize = (message: string, sizes: string[] | null) => {
+    if (!sizes || sizes.length === 0) return null;
+    const text = message.toLowerCase();
+    const sizeTokens = sizes.map(size => size.toLowerCase());
+    const match = sizeTokens.find(size => new RegExp(`\\b${size}\\b`).test(text));
+    if (!match) return null;
+    const normalized = sizes.find(size => size.toLowerCase() === match) || match.toUpperCase();
+    return normalized;
+  };
+
+  const extractQuantity = (message: string) => {
+    const match = message.match(/(\d+)\s*(?:pcs|pieces|items|qty|quantity|shirts|hoodies|totes|mugs)?/i);
+    if (!match) return null;
+    const value = parseInt(match[1], 10);
+    return Number.isNaN(value) ? null : value;
+  };
+
+  const isMaterialQuestion = (message: string) => {
+    const text = message.toLowerCase();
+    return text.includes('material') || text.includes('fabric');
+  };
 
   const updateMessageContent = (id: string, append: string) => {
     setState(prev => ({
@@ -105,6 +149,56 @@ export default function CreatePage() {
 
     setIsTyping(true);
 
+    if (state.product) {
+      const responses: string[] = [];
+      const colorRequest = extractRequestedColor(userMessage, state.product.colors);
+      if (colorRequest) {
+        if (colorRequest.match) {
+          setSelectedColor(colorRequest.match);
+          responses.push(`Got it — switching to ${colorRequest.match.name}.`);
+        } else {
+          responses.push(
+            `We don’t have ${colorRequest.requested} for ${state.product.name}. Available colors: ${state.product.colors.map(c => c.name).join(', ')}.`
+          );
+          addMessage('assistant', responses.join(' '));
+          setIsTyping(false);
+          return;
+        }
+      }
+
+      const sizeRequest = extractRequestedSize(userMessage, state.product.sizes);
+      if (sizeRequest) {
+        if (state.product.sizes?.includes(sizeRequest)) {
+          setSelectedSize(sizeRequest);
+          responses.push(`Size set to ${sizeRequest}.`);
+        } else {
+          responses.push(
+            `That size isn’t available. Sizes: ${(state.product.sizes || []).join(', ')}.`
+          );
+          addMessage('assistant', responses.join(' '));
+          setIsTyping(false);
+          return;
+        }
+      }
+
+      const qtyRequest = extractQuantity(userMessage);
+      if (qtyRequest && qtyRequest > 0) {
+        setQuantity(qtyRequest);
+        responses.push(`Quantity set to ${qtyRequest}.`);
+      }
+
+      if (isMaterialQuestion(userMessage)) {
+        responses.push('Materials are fixed for this product. You can choose color and size.');
+        addMessage('assistant', responses.join(' '));
+        setIsTyping(false);
+        return;
+      }
+
+      if (responses.length > 0) {
+        addMessage('assistant', responses.join(' '));
+      }
+    }
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), requestTimeoutMs);
 
@@ -125,7 +219,7 @@ export default function CreatePage() {
     } catch (err: any) {
       clearTimeout(timeoutId);
       setIsTyping(false);
-      addMessage('assistant', 'The AI is taking too long to respond. Please make sure Ollama is running, then try again.');
+      addMessage('assistant', 'The AI is taking too long to respond. Please try again in a moment.');
       return;
     } finally {
       clearTimeout(timeoutId);
@@ -151,7 +245,7 @@ export default function CreatePage() {
       } catch (err: any) {
         clearTimeout(timeoutId);
         setIsTyping(false);
-        addMessage('assistant', 'The AI is taking too long to respond. Please make sure Ollama is running, then try again.');
+        addMessage('assistant', 'The AI is taking too long to respond. Please try again in a moment.');
         return;
       } finally {
         clearTimeout(timeoutId);
@@ -303,7 +397,7 @@ export default function CreatePage() {
 
     clearInterval(streamTimeout);
     setIsTyping(false);
-    addMessage('assistant', 'The AI is taking too long to respond. Please make sure Ollama is running, then try again.');
+    addMessage('assistant', 'The AI is taking too long to respond. Please try again in a moment.');
   };
 
   const handleQuickAction = (action: string) => {
@@ -363,10 +457,13 @@ export default function CreatePage() {
       {/* Header */}
       <header className="sticky top-0 z-50 bg-[#ffffff]/90 backdrop-blur-xl border-b border-[#e4e4e4]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <button
+            onClick={() => router.push('/')}
+            className="flex items-center gap-3 hover:opacity-90 transition-opacity"
+          >
             <div className="w-8 h-8 bg-gradient-to-br from-[#e4002b] to-[#ff6b6b] rounded-lg" />
             <span className="text-xl font-bold tracking-tight">MerchForge</span>
-          </div>
+          </button>
           
           <button
             onClick={() => router.push('/cart')}
@@ -473,13 +570,20 @@ export default function CreatePage() {
           {/* Right: Preview */}
           <div className="flex flex-col">
             <div className="bg-white rounded-2xl p-8 border border-[#e4e4e4] mb-4 shadow-sm">
-              <h3 className="text-sm font-medium text-[#6b6b6b] mb-4">LIVE PREVIEW</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-medium text-[#6b6b6b]">LIVE PREVIEW</h3>
+                {state.product && (
+                  <div className="text-xs text-[#6b6b6b]">
+                    {state.product.name} • €{(state.product.basePrice + PRINT_FEE).toFixed(2)}
+                  </div>
+                )}
+              </div>
               
               {state.product ? (
-                <div className="relative aspect-square bg-gradient-to-br from-[#f7f7f7] to-[#ffffff] rounded-xl overflow-hidden border border-[#e4e4e4]">
+                <div className="relative aspect-[4/5] bg-gradient-to-br from-[#f7f7f7] to-[#ffffff] rounded-2xl overflow-hidden border border-[#e4e4e4]">
                   {/* Product mockup */}
-                  <div 
-                    className="absolute inset-0 flex items-center justify-center text-9xl opacity-20"
+                  <div
+                    className="absolute inset-0 flex items-center justify-center text-[7rem] opacity-20"
                     style={{ color: selectedColor?.hex }}
                   >
                     {state.product.emoji}
@@ -512,29 +616,23 @@ export default function CreatePage() {
               )}
 
               {state.product && (
-                <div className="mt-6 space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-[#6b6b6b]">Product</span>
-                    <span className="font-medium">{state.product.name}</span>
+                <div className="mt-6 grid grid-cols-2 gap-4 text-sm">
+                  <div className="rounded-xl border border-[#e4e4e4] px-4 py-3">
+                    <div className="text-xs text-[#6b6b6b]">Product</div>
+                    <div className="font-medium">{state.product.name}</div>
                   </div>
-                  {selectedColor && (
-                    <div className="flex justify-between">
-                      <span className="text-[#6b6b6b]">Color</span>
-                      <span className="font-medium">{selectedColor.name}</span>
-                    </div>
-                  )}
-                  {selectedSize && (
-                    <div className="flex justify-between">
-                      <span className="text-[#6b6b6b]">Size</span>
-                      <span className="font-medium">{selectedSize}</span>
-                    </div>
-                  )}
-                  {state.text && (
-                    <div className="flex justify-between">
-                      <span className="text-[#6b6b6b]">Text</span>
-                      <span className="font-medium">"{state.text}"</span>
-                    </div>
-                  )}
+                  <div className="rounded-xl border border-[#e4e4e4] px-4 py-3">
+                    <div className="text-xs text-[#6b6b6b]">Color</div>
+                    <div className="font-medium">{selectedColor?.name || 'Choose'}</div>
+                  </div>
+                  <div className="rounded-xl border border-[#e4e4e4] px-4 py-3">
+                    <div className="text-xs text-[#6b6b6b]">Size</div>
+                    <div className="font-medium">{selectedSize || 'Choose'}</div>
+                  </div>
+                  <div className="rounded-xl border border-[#e4e4e4] px-4 py-3">
+                    <div className="text-xs text-[#6b6b6b]">Text</div>
+                    <div className="font-medium">{state.text ? `"${state.text}"` : 'Add text'}</div>
+                  </div>
                 </div>
               )}
             </div>
@@ -542,30 +640,34 @@ export default function CreatePage() {
             {/* Design Variants */}
             {designs && state.stage === 'preview' && (
               <div className="space-y-4 animate-fadeIn">
-                <h3 className="text-sm font-medium text-[#6b6b6b]">CHOOSE VARIANT</h3>
-                <div className="space-y-2">
+                <h3 className="text-sm font-medium text-[#6b6b6b]">DESIGN VARIANTS</h3>
+                <div className="grid sm:grid-cols-3 gap-3">
                   {designs.map((variant) => (
                     <button
                       key={variant.id}
                       onClick={() => setSelectedVariant(variant.id)}
-                      className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
+                      className={`rounded-2xl border-2 p-3 text-left transition-all ${
                         selectedVariant === variant.id
-                          ? 'bg-[#f7f7f7] border-[#e4002b]'
-                          : 'bg-white border-transparent hover:border-[#e4e4e4]'
+                          ? 'border-[#e4002b] bg-[#fff5f6]'
+                          : 'border-[#e4e4e4] bg-white hover:border-[#cfcfcf]'
                       }`}
                     >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="font-bold text-sm mb-1">
-                            Variant {variant.id}: {variant.name}
-                          </div>
-                          <div className="text-xs text-[#6b6b6b] mb-2">{variant.reasoning}</div>
-                          <div className="text-xs text-[#6b6b6b]">Score: {variant.score}/100</div>
-                        </div>
-                        {selectedVariant === variant.id && (
-                          <Check size={20} className="text-[#e4002b] flex-shrink-0 ml-2" />
-                        )}
+                      <div className="h-28 rounded-xl bg-[#f7f7f7] border border-[#e4e4e4] flex items-center justify-center mb-3">
+                        <div
+                          className="w-20 h-20"
+                          style={{ color: getContrastColor(selectedColor?.hex || '#ffffff') }}
+                          dangerouslySetInnerHTML={{ __html: variant.svg }}
+                        />
                       </div>
+                      <div className="text-sm font-semibold">Variant {variant.id}</div>
+                      <div className="text-xs text-[#6b6b6b] mt-1">{variant.name}</div>
+                      <div className="text-xs text-[#6b6b6b] mt-2">Score {variant.score}/100</div>
+                      {selectedVariant === variant.id && (
+                        <div className="mt-2 inline-flex items-center gap-1 text-xs text-[#e4002b] font-semibold">
+                          <Check size={14} />
+                          Selected
+                        </div>
+                      )}
                     </button>
                   ))}
                 </div>

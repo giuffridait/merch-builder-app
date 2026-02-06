@@ -88,21 +88,21 @@ export function generateAIResponse(userMessage: string, state: ConversationState
   switch (state.stage) {
     case 'welcome':
       if (intent.product) {
-        return `Great choice! A ${intent.product.name} is perfect. Now, tell me about who this is for or what vibe you're going for. For example: "It's a birthday gift for my athletic friend" or "I want something bold and minimal for myself."`;
+        return `Great pick. Who is it for and what vibe do you want?`;
       }
-      return "I'd love to help you create custom merch! What would you like to make? A tee, hoodie, tote bag, or mug?";
+      return "What would you like to make: a tee, hoodie, tote, or mug?";
 
     case 'product':
       if (intent.product) {
-        return `Perfect! Let's design your ${intent.product.name}. Tell me about the purpose and style - for example: "It's a birthday gift for my coffee-loving friend, something cute and fun" or "Team shirt for my running club, bold and energetic."`;
+        return `Nice. What’s the purpose and style you want?`;
       }
-      return "Which product would you like to customize? We have tees, hoodies, tote bags, and mugs.";
+      return "Which product should we customize? We have tees, hoodies, totes, and mugs.";
 
     case 'intent':
       if (intent.occasion || intent.vibe) {
-        return `Got it! Now, what message or text should appear on it? You can tell me something like "Stay Wild" or describe the feeling you want, like "something motivational about running."`;
+        return `Great. What message should appear on it?`;
       }
-      return "Tell me more about this - who's it for and what style are you going for? For example: 'birthday gift, something bold' or 'personal use, minimal and clean'.";
+      return "Who’s it for and what style are you going for?";
 
     case 'text':
       // Extract text from message - anything in quotes or the whole message
@@ -110,17 +110,17 @@ export function generateAIResponse(userMessage: string, state: ConversationState
       const extractedText = quotedText ? quotedText[1] : userMessage;
       
       if (extractedText.length > 0 && extractedText.length <= 18) {
-        return `Love it! "${extractedText}" is perfect. Now, what visual element or icon would complement this? Tell me something like "a lightning bolt" or "coffee cup" or "mountain peak."`;
+        return `Nice. What icon or symbol should go with "${extractedText}"?`;
       } else if (extractedText.length > 18) {
-        return `That's a bit long - can you shorten it to under 18 characters? Maybe something punchy like the key phrase?`;
+        return `That’s a bit long. Can you shorten it to under 18 characters?`;
       }
-      return `What message should go on your ${state.product?.name}? Give me a short phrase (under 18 chars), or describe the feeling you want and I'll suggest something.`;
+      return `What message should go on your ${state.product?.name}? Keep it under 18 characters.`;
 
     case 'icon':
       if (intent.icon || userMessage.length > 5) {
-        return `Perfect! Let me generate 3 design variants for you. Give me just a moment... ✨`;
+        return `Great — generating 3 design variants now.`;
       }
-      return "What icon or visual should I include? For example: 'heart', 'star', 'coffee cup', 'mountain', etc.";
+      return "What icon or visual should I include?";
 
     default:
       return "I'm here to help! What would you like to do?";

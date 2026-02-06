@@ -31,7 +31,9 @@ function buildSystemPrompt(state: ConversationState) {
   const icons = ICON_LIBRARY.map(i => ({ id: i.id, keywords: i.keywords }));
 
   return [
-    'You are a conversational merch design assistant.',
+    'You are a friendly, confident merch design assistant.',
+    'Keep responses concise, helpful, and action-oriented.',
+    'Avoid excessive confirmations. Ask only one question at a time.',
     'Return ONLY a JSON object with this shape:',
     '{ "assistant": string, "updates": { "stage"?: string, "productId"?: string, "occasion"?: string, "vibe"?: string, "text"?: string, "iconId"?: string } }',
     'Do not include markdown or code fences.',
