@@ -614,7 +614,8 @@ export default function CreatePage() {
               </div>
               
               {state.product ? (
-                <div className="relative aspect-[4/5] bg-gradient-to-br from-[#f7f7f7] to-[#ffffff] rounded-2xl overflow-hidden border border-[#e4e4e4]">
+                <div className="relative aspect-[4/5] bg-white rounded-2xl overflow-hidden border border-[#e4e4e4]">
+                  <div className="absolute inset-0 bg-white" />
                   <img
                     src={state.product.imageUrl}
                     alt={state.product.name}
@@ -639,6 +640,23 @@ export default function CreatePage() {
                       }}
                     />
                   )}
+                  {!designs && state.text && (
+                    <div
+                      className="absolute flex items-center justify-center text-center px-4"
+                      style={{
+                        left: `${state.product.printArea.x}%`,
+                        top: `${state.product.printArea.y}%`,
+                        width: `${state.product.printArea.w}%`,
+                        height: `${state.product.printArea.h}%`,
+                        color: textColor?.hex || getContrastColor(selectedColor?.hex || '#ffffff'),
+                        fontWeight: 700,
+                        fontSize: '1.4rem',
+                        textTransform: 'uppercase'
+                      }}
+                    >
+                      {state.text}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="aspect-square bg-[#f7f7f7] rounded-xl flex items-center justify-center text-[#6b6b6b] border border-[#e4e4e4]">
@@ -661,7 +679,9 @@ export default function CreatePage() {
                   </div>
                   <div className="rounded-xl border border-[#e4e4e4] px-4 py-3">
                     <div className="text-xs text-[#6b6b6b]">Size</div>
-                    <div className="font-medium">{selectedSize || 'Choose'}</div>
+                    <div className="font-medium">
+                      {state.product.sizes ? (selectedSize || 'Choose') : 'One size'}
+                    </div>
                   </div>
                   <div className="rounded-xl border border-[#e4e4e4] px-4 py-3">
                     <div className="text-xs text-[#6b6b6b]">Text</div>
