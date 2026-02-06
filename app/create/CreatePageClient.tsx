@@ -340,7 +340,7 @@ export default function CreatePage() {
 
       if (updates.productColor && newState.product) {
         const match = newState.product.colors.find(
-          c => c.name.toLowerCase() === updates.productColor.toLowerCase()
+          (c: { name: string; hex: string }) => c.name.toLowerCase() === updates.productColor.toLowerCase()
         );
         if (match) setSelectedColor(match);
       }
@@ -457,7 +457,7 @@ export default function CreatePage() {
 
           if (mergedUpdates.productColor && newState.product) {
             const match = newState.product.colors.find(
-              c => c.name.toLowerCase() === mergedUpdates.productColor.toLowerCase()
+              (c: { name: string; hex: string }) => c.name.toLowerCase() === mergedUpdates.productColor.toLowerCase()
             );
             if (match) setSelectedColor(match);
           }
