@@ -829,6 +829,29 @@ export default function CreatePage() {
                     </div>
                   </div>
 
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Icon (optional)</label>
+                    <div className="grid grid-cols-6 gap-2">
+                      {ICON_LIBRARY.slice(0, 12).map((icon) => (
+                        <button
+                          key={icon.id}
+                          onClick={() => setState(prev => ({ ...prev, icon: icon.id }))}
+                          className={`h-10 w-10 rounded-xl border transition-all flex items-center justify-center ${
+                            state.icon === icon.id ? 'border-[#e4002b] bg-[#fff5f6]' : 'border-[#e4e4e4] bg-white hover:border-[#cfcfcf]'
+                          }`}
+                          title={icon.id}
+                        >
+                          <svg viewBox="0 0 24 24" className="h-5 w-5 text-[#111111]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d={icon.path} />
+                          </svg>
+                        </button>
+                      ))}
+                    </div>
+                    <div className="text-xs text-[#6b6b6b] mt-2">
+                      Pick an icon to generate variants, or keep text‑only.
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium mb-2">Design scale</label>
