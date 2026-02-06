@@ -191,6 +191,21 @@ export default function CreatePage() {
 
     setIsTyping(true);
 
+    const isAddToCartIntent = /add to cart|checkout|ready to buy|buy now/i.test(userMessage);
+    if (isAddToCartIntent) {
+      setIsTyping(false);
+      if (!state.product || !state.text || !selectedColor) {
+        const missing: string[] = [];
+        if (!state.product) missing.push('product');
+        if (!state.text) missing.push('text');
+        if (!selectedColor) missing.push('product color');
+        addMessage('assistant', `To add to cart, I still need: ${missing.join(', ')}.`);
+        return;
+      }
+      handleAddToCart();
+      return;
+    }
+
     // Agentic v2: no client-side parsing. All updates are driven by the LLM.
 
     const controller = new AbortController();
