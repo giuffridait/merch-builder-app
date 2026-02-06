@@ -177,6 +177,9 @@ export default function CreatePage() {
       const responses: string[] = [];
       const mentionsText = /text|letters|word|phrase|font|print|design|logo/.test(userMessage.toLowerCase())
         || /"[^"]+"/.test(userMessage);
+      const mentionsProductColor = /make it|make the|hoodie|tee|tote|bag|mug|shirt|color|colour/.test(
+        userMessage.toLowerCase()
+      );
 
       if (mentionsText) {
         const requestedTextColor = extractTextColor(userMessage);
@@ -188,7 +191,7 @@ export default function CreatePage() {
       }
 
       const colorRequest = extractRequestedColor(userMessage, state.product.colors);
-      if (colorRequest && !mentionsText) {
+      if (colorRequest && (!mentionsText || mentionsProductColor)) {
         if (colorRequest.match) {
           setSelectedColor(colorRequest.match);
           responses.push(`Got it — switching to ${colorRequest.match.name}.`);
