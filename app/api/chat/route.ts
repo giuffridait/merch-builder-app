@@ -130,9 +130,9 @@ async function getLLMResponse(
   messages: { role: 'user' | 'assistant'; content: string }[]
 ) {
   const systemPrompt = buildSystemPrompt(state);
-  const llmMessages = [
+  const llmMessages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
     { role: 'system', content: systemPrompt },
-    ...messages.map(m => ({ role: m.role, content: m.content })),
+    ...messages.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
     { role: 'user', content: userMessage }
   ];
 
