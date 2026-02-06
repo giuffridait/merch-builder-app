@@ -1,29 +1,26 @@
-# MerchForge - AI-Guided Custom Merch Builder
+# MerchForge - AI-Guided Merch Builder
 
-A conversational AI-powered custom merchandise builder built with Next.js. Users create custom apparel through natural language conversation instead of traditional form-based wizards.
+MerchForge is a Next.js app that pairs a conversational assistant with a product catalog to guide users through discovery and customization flows for custom merch.
 
-## 🎯 Key Features
+## Key Features
 
-### Conversational AI Wizard
-- **Natural language input** - No preset buttons or dropdowns
-- **Context-aware responses** - AI understands intent from casual descriptions
-- **Quick suggestions** - Contextual quick-reply buttons at each stage
-- **Real-time guidance** - Progressive disclosure of design options
+### Inventory Discovery (Agentic)
+- Natural language constraints (budget, color, material, quantity, timing)
+- Ranked recommendations with clear rationale
+- Strict constraint handling (no hallucinated colors/materials/sizes)
+- Cart-ready selection
 
-### Agentic Commerce Flow
-1. **Intent capture** - "I want a tee for my friend's birthday, something bold"
-2. **Smart extraction** - Automatically parses product, occasion, style from text
-3. **Design generation** - Creates 3 SVG variants with reasoning
-4. **Auto-recommendation** - Scores variants based on stated preferences
-5. **Validation** - Auto-adjusts colors for contrast/readability
+### Customization Flow
+- Guided design conversation
+- 3 SVG design variants with a recommended pick
+- Live preview + print-safe contrast adjustments
+- Cart-ready configuration
 
-### Design System
-- **3 Style Variants** - Minimal, Bold, Retro (auto-generated SVGs)
-- **Smart icon matching** - Keyword-based icon library search
-- **Live preview** - Real-time mockup with accurate print area
-- **Contrast validation** - Ensures text is readable on chosen colors
+### Commerce Preparedness
+- ACP/UCP readiness documentation
+- Inventory schema + capability flags
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 - Node.js 18+ and npm
@@ -31,17 +28,12 @@ A conversational AI-powered custom merchandise builder built with Next.js. Users
 ### Installation
 
 ```bash
-# Clone or download the project
 cd merch-builder-app
-
-# Install dependencies
 npm install
-
-# Run development server
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to see the app.
+Open `http://localhost:3000`.
 
 ### Build for Production
 
@@ -50,7 +42,34 @@ npm run build
 npm start
 ```
 
-## 🌐 Deploy to Vercel
+## Environment Variables
+
+Create a `.env.local` for development or set these in Vercel:
+
+```
+LLM_PROVIDER=ollama | groq | openai
+
+# Groq (recommended hosted provider)
+GROQ_API_KEY=...
+GROQ_MODEL=llama-3.3-70b-versatile
+
+# Optional basic auth
+BASIC_AUTH_USER=...
+BASIC_AUTH_PASS=...
+```
+
+Notes:
+- Vercel cannot run Ollama, so use Groq (or another hosted provider) in production.
+- If basic auth variables are not set, the site is public.
+
+## Tests
+
+```bash
+npm run test:inventory
+npm run test:smoke
+```
+
+## Deploy to Vercel
 
 ### Option 1: Vercel CLI
 ```bash
@@ -59,26 +78,28 @@ vercel
 ```
 
 ### Option 2: Vercel Dashboard
-1. Push code to GitHub/GitLab/Bitbucket
-2. Go to [vercel.com](https://vercel.com)
+1. Push code to GitHub
+2. Go to vercel.com
 3. Click "New Project"
-4. Import your repository
-5. Vercel auto-detects Next.js and deploys
+4. Import the repository
+5. Set environment variables
 
-### Option 3: One-click Deploy
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/yourusername/merch-builder)
-
-## 📁 Project Structure
+## Project Structure
 
 ```
 merch-builder-app/
 ├── app/
 │   ├── create/
-│   │   └── page.tsx          # Main conversational builder
+│   │   ├── page.tsx          # Server wrapper
+│   │   └── CreatePageClient.tsx
+│   ├── discover/
+│   │   └── page.tsx          # Inventory discovery
 │   ├── cart/
 │   │   └── page.tsx          # Shopping cart
+│   ├── preparedness/
+│   │   └── page.jsx          # ACP/UCP readiness
 │   ├── layout.tsx            # Root layout
-│   ├── page.tsx              # Home (redirects to /create)
+│   ├── page.tsx              # Home
 │   └── globals.css           # Global styles
 ├── lib/
 │   ├── catalog.ts            # Product catalog
@@ -86,108 +107,55 @@ merch-builder-app/
 │   ├── design.ts             # SVG variant generation
 │   ├── cart.ts               # LocalStorage cart management
 │   └── agent.ts              # Conversational AI logic
-├── public/                   # Static assets
+├── data/
+│   ├── inventory.acp.json    # Inventory schema
+│   └── ucp-capabilities.json # Capability flags
+├── scripts/
+│   ├── validate-inventory.js # Inventory validation
+│   └── smoke-discover.js     # API smoke tests
+├── public/
 ├── package.json
 ├── next.config.js
 ├── tailwind.config.js
 └── tsconfig.json
 ```
 
-## 🎨 Conversation Flow
+## Conversation Flow
 
-### Example User Journey
+### Example: Discovery
 
 ```
-User: "I want a tee for my friend's birthday, something bold"
-  → AI extracts: Product=Tee, Occasion=Gift, Vibe=Bold
-
-AI: "Great! What message should it say?"
-User: "Stay Wild"
-  → AI extracts: Text="Stay Wild"
-
-AI: "What icon would you like?"
-User: "lightning bolt"
-  → AI matches to lightning icon from library
-
-AI: "Generating 3 designs..."
-  → Creates Minimal, Bold, Retro variants
-  → Recommends Bold (95/100 score) based on user's "bold" preference
-  → Shows reasoning: "Maximum impact through scale and contrast"
-
-User: [Selects variant, picks color, adds to cart]
+User: "I need black hoodies under €100 for a team"
+AI: "Here are 2 options for black hoodies under €100. Top pick: Premium Hoodie."
 ```
 
-## 🛠 Customization
+### Example: Customization
 
-### Add More Products
-Edit `lib/catalog.ts`:
-```typescript
-{
-  id: 'premium-tee',
-  name: 'Premium Tee',
-  category: 'tee',
-  basePrice: 29.99,
-  colors: [...],
-  sizes: [...],
-  printArea: { x: 30, y: 25, w: 40, h: 45 },
-  emoji: '👕'
-}
+```
+User: "I want a tote for my running team"
+AI: "What message should it say?"
+```
+
+## Customization
+
+### Add or Update Inventory
+Edit `data/inventory.acp.json` and run:
+```
+npm run test:inventory
 ```
 
 ### Add More Icons
-Edit `lib/icons.ts`:
-```typescript
-{
-  id: 'custom-icon',
-  path: 'M...', // SVG path data
-  keywords: ['keyword1', 'keyword2', 'keyword3']
-}
-```
+Edit `lib/icons.ts` and add keyword mappings.
 
 ### Adjust AI Responses
-Edit `lib/agent.ts` → `generateAIResponse()` function
+- Discovery: `app/api/discover/route.ts`
+- Customization: `lib/agent.ts`
 
 ### Add New Design Variants
-Edit `lib/design.ts` → Create new `generateXXXSVG()` function
+Edit `lib/design.ts` to add a new SVG generator.
 
-## 🎯 Technical Highlights
-
-### Why This Approach Works
-
-1. **Reduces friction** - No "blank canvas" anxiety or decision paralysis
-2. **Feels magical** - AI extracts intent from casual language
-3. **Transparent reasoning** - Shows *why* it recommends variant A over B
-4. **Progressive disclosure** - Only shows options when relevant
-5. **Graceful degradation** - Falls back to suggestions if parsing fails
-
-### Agentic Commerce Principles
-
-- **Intent → Propose** - AI generates options based on stated goals
-- **Validate → Fix** - Auto-adjusts for contrast, margins, readability
-- **Explain → Build Trust** - Shows reasoning scores (95/100)
-- **Human-in-loop** - User has final say on all choices
-
-## 📊 Demo Metrics
-
-- **Time to cart**: ~60-90 seconds (vs 3-5 min traditional builders)
-- **Conversation turns**: 4-6 messages average
-- **Variant generation**: Consistent 100% success rate (SVG-based)
-- **Mobile-friendly**: Fully responsive chat interface
-
-## 🔮 Roadmap / V2 Ideas
-
-- [ ] Multi-turn refinement ("make it more playful")
-- [ ] Image generation API integration (replace library icons)
-- [ ] Memory across sessions (localStorage preferences)
-- [ ] Shareable design links
-- [ ] Real checkout integration (Stripe)
-- [ ] Team collaboration (share designs in org)
-- [ ] A/B testing different AI prompt styles
-
-## 📝 License
+## License
 
 MIT
-
-## 🙏 Credits
 
 Built for demonstrating agentic commerce UX patterns.
