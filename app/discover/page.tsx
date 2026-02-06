@@ -377,20 +377,9 @@ export default function DiscoverPage() {
         <div className="grid lg:grid-cols-[360px_1fr] gap-10">
           <div className="flex flex-col">
             <div className="bg-[#ffffff] border border-[#e4e4e4] rounded-2xl p-5 shadow-sm">
-              <div className="flex items-center justify-between gap-2 mb-3">
-                <div className="flex items-center gap-2">
-                  <PackageSearch className="text-[#e4002b]" />
-                  <h1 className="text-lg font-semibold">Inventory Companion</h1>
-                </div>
-                <label className="flex items-center gap-2 text-xs text-[#6b6b6b]">
-                  <span>Optimistic preview</span>
-                  <input
-                    type="checkbox"
-                    checked={optimisticPreview}
-                    onChange={(e) => setOptimisticPreview(e.target.checked)}
-                    className="h-4 w-4 rounded border-[#e4e4e4] text-[#e4002b] focus:ring-[#e4002b]"
-                  />
-                </label>
+              <div className="flex items-center gap-2 mb-3">
+                <PackageSearch className="text-[#e4002b]" />
+                <h1 className="text-lg font-semibold">Inventory Companion</h1>
               </div>
 
               <div className="space-y-3 max-h-[36vh] overflow-y-auto pr-1">
@@ -636,6 +625,12 @@ export default function DiscoverPage() {
                           >
                             Add to Cart
                           </button>
+                          <Link
+                            href="/cart"
+                            className="inline-flex items-center justify-center px-4 py-2 rounded-lg border border-[#e4e4e4] text-[#111111] hover:bg-[#f7f7f7] transition-all text-sm font-semibold"
+                          >
+                            Cart
+                          </Link>
                           <Link
                             href={`/create?product=${item.item_id}`}
                             className="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-gradient-to-r from-[#e4002b] to-[#ff6b6b] hover:opacity-90 transition-all text-sm font-semibold"
