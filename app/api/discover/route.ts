@@ -107,10 +107,13 @@ function fallbackResponse(userMessage: string, state: DiscoverState) {
   const stage = state.stage === 'welcome' ? 'constraints' : state.stage;
   const results = rankInventory(merged);
 
-  return {
-    assistantMessage: stage === 'welcome'
+  const assistantMessage =
+    stage === 'constraints'
       ? "Tell me what you need (budget, material, style, quantity, timing) and I’ll narrow options."
-      : "Got it. Here are the best matches based on your constraints.",
+      : "Got it. Here are the best matches based on your constraints.";
+
+  return {
+    assistantMessage,
     updates: { ...updates, stage },
     results
   };
