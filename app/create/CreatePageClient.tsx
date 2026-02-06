@@ -665,7 +665,7 @@ export default function CreatePage() {
                         width: `${state.product.printArea.w}%`,
                         height: `${state.product.printArea.h}%`,
                         color: textColor?.hex || getContrastColor(selectedColor?.hex || '#ffffff'),
-                        transform: `translate(${designOffset.x}%, ${designOffset.y}%) scale(${designScale})`,
+                        transform: `translate(${designOffset.x}px, ${designOffset.y}px) scale(${designScale})`,
                         transformOrigin: 'center'
                       }}
                       dangerouslySetInnerHTML={{
@@ -833,28 +833,34 @@ export default function CreatePage() {
                         <div>
                           <input
                             type="range"
-                            min="-40"
-                            max="40"
+                            min="-60"
+                            max="60"
                             step="1"
                             value={designOffset.x}
                             onChange={(e) => setDesignOffset(prev => ({ ...prev, x: parseInt(e.target.value, 10) }))}
                             className="w-full accent-[#e4002b]"
                           />
-                          <div className="text-xs text-[#6b6b6b] mt-1">X {designOffset.x}%</div>
+                          <div className="text-xs text-[#6b6b6b] mt-1">X {designOffset.x}px</div>
                         </div>
                         <div>
                           <input
                             type="range"
-                            min="-40"
-                            max="40"
+                            min="-60"
+                            max="60"
                             step="1"
                             value={designOffset.y}
                             onChange={(e) => setDesignOffset(prev => ({ ...prev, y: parseInt(e.target.value, 10) }))}
                             className="w-full accent-[#e4002b]"
                           />
-                          <div className="text-xs text-[#6b6b6b] mt-1">Y {designOffset.y}%</div>
+                          <div className="text-xs text-[#6b6b6b] mt-1">Y {designOffset.y}px</div>
                         </div>
                       </div>
+                      <button
+                        onClick={() => setDesignOffset({ x: 0, y: 0 })}
+                        className="mt-2 text-xs text-[#6b6b6b] hover:text-[#111111] transition-colors"
+                      >
+                        Reset position
+                      </button>
                     </div>
                   </div>
 
