@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft, PackageSearch, Send } from 'lucide-react';
 import { Message } from '@/lib/agent';
 import { DiscoverConstraints, DiscoverState, InventoryResult, parseConstraints, rankInventory } from '@/lib/discover';
-import { addToCart } from '@/lib/cart';
+import { addToCart, getCart } from '@/lib/cart';
 import { getInventory } from '@/lib/inventory';
 
 export default function DiscoverPage() {
@@ -23,6 +23,7 @@ export default function DiscoverPage() {
   const [imageErrorById, setImageErrorById] = useState<Record<string, boolean>>({});
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [optimisticPreview, setOptimisticPreview] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
 
   const [state, setState] = useState<DiscoverState>({
     stage: 'welcome',
@@ -45,6 +46,12 @@ export default function DiscoverPage() {
     }
     return map;
   }, []);
+
+  const resolveColorName = (colors: { name: string }[], requested?: string) => {
+    if (!requested) return undefined;
+    const lowered = requested.toLowerCase();
+    return colors.find(c => c.name.toLowerCase() === lowered)?.name;
+  };
 
   const updateMessageContent = (id: string, append: string) => {
     setMessages(prev =>
@@ -188,7 +195,9 @@ export default function DiscoverPage() {
               setSelectedColorById(prev => {
                 const next = { ...prev };
                 for (const item of resultsFromStream) {
-                  next[item.item_id] = updates.color!;
+                  const inventoryItem = inventoryById.get(item.item_id);
+                  const colors = inventoryItem?.attributes.variants.colors || [];
+                  next[item.item_id] = resolveColorName(colors, updates.color!) || updates.color!;
                 }
                 return next;
               });
@@ -247,7 +256,9 @@ export default function DiscoverPage() {
                 setSelectedColorById(prev => {
                   const next = { ...prev };
                   for (const item of seeded) {
-                    next[item.item_id] = merged.color!;
+                    const inventoryItem = inventoryById.get(item.item_id);
+                    const colors = inventoryItem?.attributes.variants.colors || [];
+                    next[item.item_id] = resolveColorName(colors, merged.color!) || merged.color!;
                   }
                   return next;
                 });
@@ -291,7 +302,8 @@ export default function DiscoverPage() {
     if (!inventoryItem) return false;
 
     const colors = inventoryItem.attributes.variants.colors || [];
-    const selectedColorName = selectedColorById[item.item_id] || item.matchedColor;
+    const requestedColor = selectedColorById[item.item_id] || item.matchedColor;
+    const selectedColorName = resolveColorName(colors, requestedColor) || requestedColor;
     const selectedColor = colors.find(c => c.name === selectedColorName);
     if (!selectedColor && colors.length > 0) return false;
 
@@ -317,6 +329,7 @@ export default function DiscoverPage() {
       currency: inventoryItem.price.currency,
       deliveryEstimateDays: inventoryItem.attributes.lead_time_days
     });
+    setCartCount(getCart().length);
     setAddedItemId(item.item_id);
     return true;
   };
@@ -357,6 +370,10 @@ export default function DiscoverPage() {
     }
   }, [hasInteracted, results.length]);
 
+  useEffect(() => {
+    setCartCount(getCart().length);
+  }, []);
+
   return (
     <main className="min-h-screen bg-[#ffffff] text-[#111111]">
       <div className="max-w-6xl mx-auto px-6 py-10 pb-40">
@@ -365,13 +382,22 @@ export default function DiscoverPage() {
             <div className="w-9 h-9 bg-gradient-to-br from-[#e4002b] to-[#ff6b6b] rounded-xl" />
             <span className="text-xl font-bold tracking-tight">MerchForge</span>
           </div>
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-sm text-[#6b6b6b] hover:text-[#111111] transition-colors"
-          >
-            <ArrowLeft size={16} />
-            Back to Home
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/cart"
+              className="inline-flex items-center gap-2 text-sm text-[#111111] border border-[#e4e4e4] rounded-full px-3 py-1.5 hover:bg-[#f7f7f7] transition-colors"
+            >
+              Cart
+              <span className="text-xs text-[#6b6b6b]">({cartCount})</span>
+            </Link>
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 text-sm text-[#6b6b6b] hover:text-[#111111] transition-colors"
+            >
+              <ArrowLeft size={16} />
+              Back to Home
+            </Link>
+          </div>
         </header>
 
         <div className="grid lg:grid-cols-[360px_1fr] gap-10">
@@ -484,7 +510,12 @@ export default function DiscoverPage() {
                     const item = activeResults[carouselIndex % activeResults.length];
                     if (!item) return null;
                     const inventoryItem = inventoryById.get(item.item_id);
-                    const selectedColor = selectedColorById[item.item_id] || item.matchedColor;
+                    const requestedColor = selectedColorById[item.item_id] || item.matchedColor;
+                    const resolvedColor =
+                      inventoryItem?.attributes.variants.colors
+                        ? resolveColorName(inventoryItem.attributes.variants.colors, requestedColor)
+                        : undefined;
+                    const selectedColor = resolvedColor || requestedColor;
                     const selectedMaterial =
                       selectedMaterialById[item.item_id] ||
                       item.matchedMaterial ||
@@ -584,7 +615,7 @@ export default function DiscoverPage() {
                                   <label className="text-xs text-[#6b6b6b]">
                                     Color
                                     <select
-                                      value={selectedColorById[item.item_id] || item.matchedColor || colors[0].name}
+                                      value={resolvedColor || selectedColorById[item.item_id] || item.matchedColor || colors[0].name}
                                       onChange={(e) =>
                                         setSelectedColorById(prev => ({ ...prev, [item.item_id]: e.target.value }))
                                       }
@@ -620,7 +651,12 @@ export default function DiscoverPage() {
                             );
                           })()}
                           <button
-                            onClick={() => handleAddToCart(item)}
+                            onClick={() => {
+                              const added = handleAddToCart(item);
+                              if (!added) {
+                                addMessage('assistant', 'Please confirm color and size before adding to cart.');
+                              }
+                            }}
                             className="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-[#111111] text-white hover:opacity-90 transition-all text-sm font-semibold"
                           >
                             Add to Cart
