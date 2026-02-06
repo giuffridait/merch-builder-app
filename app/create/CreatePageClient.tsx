@@ -623,7 +623,7 @@ export default function CreatePage() {
                   <img
                     src={state.product.imageUrl}
                     alt={state.product.name}
-                    className="absolute inset-0 w-full h-full object-contain p-12"
+                    className="absolute inset-0 w-full h-full object-contain p-12 bg-white"
                   />
                   
                   {/* Design overlay */}
@@ -672,29 +672,29 @@ export default function CreatePage() {
               )}
 
               {state.product && (
-                <div className="mt-6 grid grid-cols-2 gap-4 text-sm">
-                  <div className="rounded-xl border border-[#e4e4e4] px-4 py-3">
-                    <div className="text-xs text-[#6b6b6b]">Product</div>
-                    <div className="font-medium">{state.product.name}</div>
-                  </div>
-                  <div className="rounded-xl border border-[#e4e4e4] px-4 py-3">
-                    <div className="text-xs text-[#6b6b6b]">Color</div>
-                    <div className="font-medium">{selectedColor?.name || 'Choose'}</div>
-                  </div>
-                  <div className="rounded-xl border border-[#e4e4e4] px-4 py-3">
-                    <div className="text-xs text-[#6b6b6b]">Size</div>
-                    <div className="font-medium">
-                      {state.product.sizes ? (selectedSize || 'Choose') : 'One size'}
-                    </div>
-                  </div>
-                  <div className="rounded-xl border border-[#e4e4e4] px-4 py-3">
-                    <div className="text-xs text-[#6b6b6b]">Text</div>
-                    <div className="font-medium">{state.text ? `"${state.text}"` : 'Add text'}</div>
-                  </div>
-                  <div className="rounded-xl border border-[#e4e4e4] px-4 py-3">
-                    <div className="text-xs text-[#6b6b6b]">Text color</div>
-                    <div className="font-medium">{textColor?.name || 'Auto'}</div>
-                  </div>
+                <div className="mt-6 flex flex-wrap gap-2 text-xs text-[#6b6b6b]">
+                  <span className="px-3 py-1.5 rounded-full border border-[#e4e4e4] bg-white">
+                    Product: <span className="text-[#111111] font-medium">{state.product.name}</span>
+                  </span>
+                  <span className="px-3 py-1.5 rounded-full border border-[#e4e4e4] bg-white">
+                    Color: <span className="text-[#111111] font-medium">{selectedColor?.name || 'Choose'}</span>
+                  </span>
+                  {state.product.sizes && (
+                    <span className="px-3 py-1.5 rounded-full border border-[#e4e4e4] bg-white">
+                      Size: <span className="text-[#111111] font-medium">{selectedSize || 'Choose'}</span>
+                    </span>
+                  )}
+                  {!state.product.sizes && (
+                    <span className="px-3 py-1.5 rounded-full border border-[#e4e4e4] bg-white">
+                      Size: <span className="text-[#111111] font-medium">One size</span>
+                    </span>
+                  )}
+                  <span className="px-3 py-1.5 rounded-full border border-[#e4e4e4] bg-white">
+                    Text: <span className="text-[#111111] font-medium">{state.text ? `"${state.text}"` : 'Add text'}</span>
+                  </span>
+                  <span className="px-3 py-1.5 rounded-full border border-[#e4e4e4] bg-white">
+                    Text color: <span className="text-[#111111] font-medium">{textColor?.name || 'Auto'}</span>
+                  </span>
                 </div>
               )}
             </div>
