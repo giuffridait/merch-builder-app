@@ -441,7 +441,11 @@ export default function CreatePage() {
   };
 
   const handleAddToCart = () => {
-    if (!state.product || !designs || !selectedVariant || !selectedColor) return;
+    if (!state.product) return;
+    if (!designs || !selectedVariant || !selectedColor || !state.text || !state.icon) {
+      addMessage('assistant', 'Finish the design steps first (text + icon), then pick a variant before adding to cart.');
+      return;
+    }
 
     const variant = designs.find(v => v.id === selectedVariant);
     if (!variant) return;
@@ -855,11 +859,17 @@ export default function CreatePage() {
 
                   <button
                     onClick={handleAddToCart}
-                    className="w-full py-4 rounded-xl bg-gradient-to-r from-[#e4002b] to-[#ff6b6b] hover:opacity-90 transition-all font-bold text-lg flex items-center justify-center gap-2"
+                    disabled={!designs || !selectedVariant || !selectedColor || !state.text || !state.icon}
+                    className="w-full py-4 rounded-xl bg-gradient-to-r from-[#e4002b] to-[#ff6b6b] hover:opacity-90 transition-all font-bold text-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <ShoppingCart size={20} />
                     Add to Cart • €{((state.product!.basePrice + PRINT_FEE) * quantity).toFixed(2)}
                   </button>
+                  {(!designs || !selectedVariant || !state.text || !state.icon) && (
+                    <div className="text-xs text-[#6b6b6b]">
+                      Add text and icon, then select a variant to enable add to cart.
+                    </div>
+                  )}
                   <div className="text-xs text-[#6b6b6b]">
                     Cart-ready item includes preview, final price, and estimated delivery.
                   </div>
