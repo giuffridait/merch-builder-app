@@ -12,8 +12,10 @@ MerchForge is a Next.js app that pairs a conversational assistant with a product
 
 ### Customization Flow
 - Guided design conversation
+- Text-only or icon-based designs (icon optional)
 - 3 SVG design variants with a recommended pick
-- Live preview + print-safe contrast adjustments
+- Live preview with color-specific product images
+- Text color selection + basic layering controls (scale/position)
 - Cart-ready configuration
 
 ### Commerce Preparedness
@@ -98,6 +100,9 @@ merch-builder-app/
 │   │   └── page.tsx          # Shopping cart
 │   ├── preparedness/
 │   │   └── page.jsx          # ACP/UCP readiness
+│   ├── api/
+│   │   ├── chat/route.ts     # Customization assistant
+│   │   └── discover/route.ts # Inventory assistant
 │   ├── layout.tsx            # Root layout
 │   ├── page.tsx              # Home
 │   └── globals.css           # Global styles
@@ -114,6 +119,7 @@ merch-builder-app/
 │   ├── validate-inventory.js # Inventory validation
 │   └── smoke-discover.js     # API smoke tests
 ├── public/
+├── middleware.ts             # Basic auth (optional)
 ├── package.json
 ├── next.config.js
 ├── tailwind.config.js
@@ -128,6 +134,14 @@ merch-builder-app/
 User: "I need black hoodies under €100 for a team"
 AI: "Here are 2 options for black hoodies under €100. Top pick: Premium Hoodie."
 ```
+
+### Agentic Flow (Discovery)
+
+1. **Intent capture** → extract product, budget, color, material, quantity, timing  
+2. **Constraint resolution** → validate against inventory and availability  
+3. **Inventory reasoning** → rank candidates, keep fallbacks  
+4. **Product selection** → present top pick + rationale  
+5. **Cart-ready output** → price + delivery estimate  
 
 ### Example: Customization
 
@@ -153,6 +167,9 @@ Edit `lib/icons.ts` and add keyword mappings.
 
 ### Add New Design Variants
 Edit `lib/design.ts` to add a new SVG generator.
+
+### Product Preview Images
+Color-specific preview images are mapped in `lib/catalog.ts` under `imageUrlByColor`.
 
 ## License
 
