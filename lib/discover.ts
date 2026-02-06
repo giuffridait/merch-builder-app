@@ -21,7 +21,7 @@ export type DiscoverState = {
   constraints: DiscoverConstraints;
 };
 
-const CATEGORY_KEYWORDS: Record<DiscoverConstraints['category'], string[]> = {
+const CATEGORY_KEYWORDS: Record<NonNullable<DiscoverConstraints['category']>, string[]> = {
   tee: ['tee', 't-shirt', 'shirt'],
   hoodie: ['hoodie', 'sweatshirt'],
   tote: ['tote', 'bag'],
