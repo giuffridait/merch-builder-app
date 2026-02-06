@@ -8,6 +8,7 @@ export interface Product {
   printArea: { x: number; y: number; w: number; h: number };
   emoji: string;
   imageUrl: string;
+  imageUrlByColor?: Record<string, string>;
 }
 
 export const PRODUCTS: Product[] = [
@@ -26,7 +27,14 @@ export const PRODUCTS: Product[] = [
     sizes: ['XS', 'S', 'M', 'L', 'XL', '2XL'],
     printArea: { x: 30, y: 25, w: 40, h: 45 },
     emoji: '👕',
-    imageUrl: '/images/products/classic-tee-white-cotton.png'
+    imageUrl: '/images/products/classic-tee-white-cotton.png',
+    imageUrlByColor: {
+      black: '/images/products/classic-tee-black-cotton.png',
+      white: '/images/products/classic-tee-white-cotton.png',
+      navy: '/images/products/classic-tee-navy-cotton.png',
+      forest: '/images/products/classic-tee-forest-cotton.png',
+      burgundy: '/images/products/classic-tee-burgundy-cotton.png'
+    }
   },
   {
     id: 'hoodie',
@@ -42,7 +50,13 @@ export const PRODUCTS: Product[] = [
     sizes: ['S', 'M', 'L', 'XL', '2XL'],
     printArea: { x: 30, y: 28, w: 40, h: 40 },
     emoji: '🧥',
-    imageUrl: '/images/products/hoodie-black-cotton.png'
+    imageUrl: '/images/products/hoodie-black-cotton.png',
+    imageUrlByColor: {
+      black: '/images/products/hoodie-black-cotton.png',
+      charcoal: '/images/products/hoodie-charcoal-cotton.png',
+      navy: '/images/products/hoodie-navy-cotton.png',
+      burgundy: '/images/products/hoodie-burgundy-cotton.png'
+    }
   },
   {
     id: 'tote',
@@ -56,7 +70,11 @@ export const PRODUCTS: Product[] = [
     sizes: null,
     printArea: { x: 25, y: 35, w: 50, h: 35 },
     emoji: '👜',
-    imageUrl: '/images/products/tote-natural-canvas.png'
+    imageUrl: '/images/products/tote-natural-canvas.png',
+    imageUrlByColor: {
+      natural: '/images/products/tote-natural-canvas.png',
+      black: '/images/products/tote-black-canvas.png'
+    }
   },
   {
     id: 'mug',
@@ -70,7 +88,11 @@ export const PRODUCTS: Product[] = [
     sizes: null,
     printArea: { x: 20, y: 30, w: 60, h: 40 },
     emoji: '☕',
-    imageUrl: '/images/products/mug-white-ceramic.png'
+    imageUrl: '/images/products/mug-white-ceramic.png',
+    imageUrlByColor: {
+      white: '/images/products/mug-white-ceramic.png',
+      black: '/images/products/mug-black-ceramic.png'
+    }
   }
 ];
 

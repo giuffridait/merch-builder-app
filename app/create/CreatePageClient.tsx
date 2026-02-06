@@ -621,7 +621,10 @@ export default function CreatePage() {
                 <div className="relative aspect-[4/5] bg-white rounded-2xl overflow-hidden border border-[#e4e4e4]">
                   <div className="absolute inset-0 bg-white" />
                   <img
-                    src={state.product.imageUrl}
+                    src={
+                      state.product.imageUrlByColor?.[selectedColor?.name?.toLowerCase() || ''] ||
+                      state.product.imageUrl
+                    }
                     alt={state.product.name}
                     className="absolute inset-0 w-full h-full object-contain p-12 bg-white"
                   />
