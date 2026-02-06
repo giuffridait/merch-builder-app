@@ -4,7 +4,7 @@ type ChatMessage = {
 };
 
 type LLMConfig = {
-  provider: 'ollama' | 'openai';
+  provider: 'ollama' | 'openai' | 'groq';
   model: string;
   baseUrl?: string;
   apiKey?: string;
@@ -23,6 +23,13 @@ function getConfig(): LLMConfig {
     const baseUrl = process.env.QWEN_API_BASE;
     const apiKey = process.env.QWEN_API_KEY;
     return { provider: 'openai', model, baseUrl, apiKey };
+  }
+
+  if (provider === 'groq') {
+    const model = process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
+    const baseUrl = process.env.GROQ_API_BASE || 'https://api.groq.com/openai/v1';
+    const apiKey = process.env.GROQ_API_KEY;
+    return { provider: 'groq', model, baseUrl, apiKey };
   }
 
   const model = process.env.OLLAMA_MODEL || 'qwen2.5:14b';
@@ -107,7 +114,7 @@ export async function chatCompletion(messages: ChatMessage[]): Promise<string> {
       }
 
       if (!config.baseUrl || !config.apiKey) {
-        throw new Error('QWEN_API_BASE and QWEN_API_KEY are required for openai provider.');
+        throw new Error('API base URL and API key are required for OpenAI-compatible providers.');
       }
 
       const res = await fetchWithTimeout(`${config.baseUrl}/chat/completions`, {
