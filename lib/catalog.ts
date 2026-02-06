@@ -7,6 +7,7 @@ export interface Product {
   sizes: string[] | null;
   printArea: { x: number; y: number; w: number; h: number };
   emoji: string;
+  imageUrl: string;
 }
 
 export const PRODUCTS: Product[] = [
@@ -24,7 +25,8 @@ export const PRODUCTS: Product[] = [
     ],
     sizes: ['XS', 'S', 'M', 'L', 'XL', '2XL'],
     printArea: { x: 30, y: 25, w: 40, h: 45 },
-    emoji: '👕'
+    emoji: '👕',
+    imageUrl: '/images/products/classic-tee-white-cotton.png'
   },
   {
     id: 'hoodie',
@@ -39,7 +41,8 @@ export const PRODUCTS: Product[] = [
     ],
     sizes: ['S', 'M', 'L', 'XL', '2XL'],
     printArea: { x: 30, y: 28, w: 40, h: 40 },
-    emoji: '🧥'
+    emoji: '🧥',
+    imageUrl: '/images/products/hoodie-black-cotton.png'
   },
   {
     id: 'tote',
@@ -52,7 +55,8 @@ export const PRODUCTS: Product[] = [
     ],
     sizes: null,
     printArea: { x: 25, y: 35, w: 50, h: 35 },
-    emoji: '👜'
+    emoji: '👜',
+    imageUrl: '/images/products/tote-natural-canvas.png'
   },
   {
     id: 'mug',
@@ -65,7 +69,8 @@ export const PRODUCTS: Product[] = [
     ],
     sizes: null,
     printArea: { x: 20, y: 30, w: 60, h: 40 },
-    emoji: '☕'
+    emoji: '☕',
+    imageUrl: '/images/products/mug-white-ceramic.png'
   }
 ];
 

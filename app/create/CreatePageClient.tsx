@@ -456,7 +456,7 @@ export default function CreatePage() {
     <div className="min-h-screen bg-[#ffffff] text-[#111111] flex flex-col">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-[#ffffff]/90 backdrop-blur-xl border-b border-[#e4e4e4]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <button
             onClick={() => router.push('/')}
             className="flex items-center gap-3 hover:opacity-90 transition-opacity"
@@ -581,13 +581,11 @@ export default function CreatePage() {
               
               {state.product ? (
                 <div className="relative aspect-[4/5] bg-gradient-to-br from-[#f7f7f7] to-[#ffffff] rounded-2xl overflow-hidden border border-[#e4e4e4]">
-                  {/* Product mockup */}
-                  <div
-                    className="absolute inset-0 flex items-center justify-center text-[7rem] opacity-20"
-                    style={{ color: selectedColor?.hex }}
-                  >
-                    {state.product.emoji}
-                  </div>
+                  <img
+                    src={state.product.imageUrl}
+                    alt={state.product.name}
+                    className="absolute inset-0 w-full h-full object-contain p-12"
+                  />
                   
                   {/* Design overlay */}
                   {designs && selectedVariant && (
