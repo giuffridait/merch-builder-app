@@ -665,7 +665,7 @@ export default function CreatePage() {
                         width: `${state.product.printArea.w}%`,
                         height: `${state.product.printArea.h}%`,
                         color: textColor?.hex || getContrastColor(selectedColor?.hex || '#ffffff'),
-                        transform: `translate(${designOffset.x}px, ${designOffset.y}px) scale(${designScale})`,
+                        transform: `translate(${designOffset.x}%, ${designOffset.y}%) scale(${designScale})`,
                         transformOrigin: 'center'
                       }}
                       dangerouslySetInnerHTML={{
@@ -732,6 +732,9 @@ export default function CreatePage() {
             {designs && state.stage === 'preview' && (
               <div className="space-y-4 animate-fadeIn">
                 <h3 className="text-sm font-medium text-[#6b6b6b]">DESIGN VARIANTS</h3>
+                <div className="text-xs text-[#6b6b6b]">
+                  Pick a variant once you’ve provided text and icon. Or skip this and add text‑only.
+                </div>
                 <div className="grid sm:grid-cols-3 gap-3">
                   {designs.map((variant) => (
                     <button
@@ -814,13 +817,13 @@ export default function CreatePage() {
                       <input
                         type="range"
                         min="0.6"
-                        max="1.4"
+                        max="2.2"
                         step="0.05"
                         value={designScale}
                         onChange={(e) => setDesignScale(parseFloat(e.target.value))}
                         className="w-full accent-[#e4002b]"
                       />
-                      <div className="text-xs text-[#6b6b6b] mt-1">{designScale.toFixed(2)}x</div>
+                      <div className="text-xs text-[#6b6b6b] mt-1">{(designScale * 100).toFixed(0)}%</div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-2">Position</label>
@@ -828,26 +831,26 @@ export default function CreatePage() {
                         <div>
                           <input
                             type="range"
-                            min="-30"
-                            max="30"
+                            min="-40"
+                            max="40"
                             step="1"
                             value={designOffset.x}
                             onChange={(e) => setDesignOffset(prev => ({ ...prev, x: parseInt(e.target.value, 10) }))}
                             className="w-full accent-[#e4002b]"
                           />
-                          <div className="text-xs text-[#6b6b6b] mt-1">X {designOffset.x}px</div>
+                          <div className="text-xs text-[#6b6b6b] mt-1">X {designOffset.x}%</div>
                         </div>
                         <div>
                           <input
                             type="range"
-                            min="-30"
-                            max="30"
+                            min="-40"
+                            max="40"
                             step="1"
                             value={designOffset.y}
                             onChange={(e) => setDesignOffset(prev => ({ ...prev, y: parseInt(e.target.value, 10) }))}
                             className="w-full accent-[#e4002b]"
                           />
-                          <div className="text-xs text-[#6b6b6b] mt-1">Y {designOffset.y}px</div>
+                          <div className="text-xs text-[#6b6b6b] mt-1">Y {designOffset.y}%</div>
                         </div>
                       </div>
                     </div>
