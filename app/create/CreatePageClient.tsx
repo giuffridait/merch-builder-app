@@ -338,6 +338,26 @@ export default function CreatePage() {
       const newState = { ...state, ...updates };
       setState(newState);
 
+      if (updates.productColor && newState.product) {
+        const match = newState.product.colors.find(
+          c => c.name.toLowerCase() === updates.productColor.toLowerCase()
+        );
+        if (match) setSelectedColor(match);
+      }
+      if (updates.textColor) {
+        const map = COLOR_MAP[updates.textColor.toLowerCase()];
+        if (map) {
+          setTextColor(map);
+          setTextColorAuto(false);
+        }
+      }
+      if (updates.size && newState.product?.sizes?.includes(updates.size)) {
+        setSelectedSize(updates.size);
+      }
+      if (updates.quantity) {
+        setQuantity(updates.quantity);
+      }
+
       if (shouldGenerateDesigns(newState) || (newState.stage === 'icon' && newState.text && newState.icon)) {
         setIsTyping(false);
         addMessage('assistant', 'Perfect! Let me generate 3 design variants for you... ✨');
@@ -434,6 +454,26 @@ export default function CreatePage() {
 
           const newState = { ...state, ...mergedUpdates };
           setState(prev => ({ ...prev, ...mergedUpdates }));
+
+          if (mergedUpdates.productColor && newState.product) {
+            const match = newState.product.colors.find(
+              c => c.name.toLowerCase() === mergedUpdates.productColor.toLowerCase()
+            );
+            if (match) setSelectedColor(match);
+          }
+          if (mergedUpdates.textColor) {
+            const map = COLOR_MAP[mergedUpdates.textColor.toLowerCase()];
+            if (map) {
+              setTextColor(map);
+              setTextColorAuto(false);
+            }
+          }
+          if (mergedUpdates.size && newState.product?.sizes?.includes(mergedUpdates.size)) {
+            setSelectedSize(mergedUpdates.size);
+          }
+          if (mergedUpdates.quantity) {
+            setQuantity(mergedUpdates.quantity);
+          }
 
           if (shouldGenerateDesigns(newState) || (newState.stage === 'icon' && newState.text && newState.icon)) {
             setIsTyping(false);

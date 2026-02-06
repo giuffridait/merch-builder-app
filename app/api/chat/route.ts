@@ -8,6 +8,13 @@ import {
   parseUserIntent,
   extractTextFromMessage
 } from '@/lib/agent';
+import {
+  CUSTOMIZATION_LIMITS,
+  OCCASIONS,
+  VIBES,
+  TEXT_COLOR_OPTIONS,
+  validateCustomizationUpdates
+} from '@/lib/customization-constraints';
 
 const STAGES: ConversationState['stage'][] = [
   'welcome',
@@ -22,24 +29,37 @@ const STAGES: ConversationState['stage'][] = [
 
 type LLMResult = {
   assistant: string;
-  updates?: Partial<ConversationState> & { productId?: string; iconId?: string };
+  updates?: Partial<ConversationState> & {
+    productId?: string;
+    iconId?: string;
+    productColor?: string;
+    textColor?: string;
+    size?: string;
+    quantity?: number;
+  };
 };
 
 function buildSystemPrompt(state: ConversationState) {
   const { messages: _messages, ...stateSummary } = state;
   const products = PRODUCTS.map(p => ({ id: p.id, name: p.name, category: p.category }));
   const icons = ICON_LIBRARY.map(i => ({ id: i.id, keywords: i.keywords }));
+  const textColors = Object.keys(TEXT_COLOR_OPTIONS);
 
   return [
     'You are a friendly, confident merch design assistant.',
     'Keep responses concise, helpful, and action-oriented.',
     'Avoid excessive confirmations. Ask only one question at a time.',
     'Return ONLY a JSON object with this shape:',
-    '{ "assistant": string, "updates": { "stage"?: string, "productId"?: string, "occasion"?: string, "vibe"?: string, "text"?: string, "iconId"?: string } }',
+    '{ "assistant": string, "updates": { "stage"?: string, "productId"?: string, "occasion"?: string, "vibe"?: string, "text"?: string, "iconId"?: string, "productColor"?: string, "textColor"?: string, "size"?: string, "quantity"?: number } }',
     'Do not include markdown or code fences.',
     'Only use productId and iconId values from the provided lists.',
     'Use the current state to decide the next stage. Progression is: welcome -> product -> intent -> text -> icon -> preview.',
-    'If the text is too long for a design (over 18 chars), ask to shorten it.',
+    `If the text is too long for a design (over ${CUSTOMIZATION_LIMITS.textMaxLength} chars), ask to shorten it.`,
+    `Allowed vibes: ${VIBES.join(', ')}.`,
+    `Allowed occasions: ${OCCASIONS.join(', ')}.`,
+    `Allowed text colors: ${textColors.join(', ')}.`,
+    'productColor must be a color that exists on the chosen product.',
+    'If a user requests a text color, set textColor (not productColor) unless they explicitly mention the product color.',
     'If you cannot confidently extract a value, leave it out.',
     `Current state: ${JSON.stringify(stateSummary)}`,
     `Products: ${JSON.stringify(products)}`,
@@ -73,22 +93,29 @@ function normalizeUpdates(raw: LLMResult['updates']): Partial<ConversationState>
   const updates: Partial<ConversationState> = {};
   if (!raw) return updates;
 
-  if (raw.stage && STAGES.includes(raw.stage)) {
-    updates.stage = raw.stage;
+  const validated = validateCustomizationUpdates(raw);
+
+  if (validated.stage && STAGES.includes(validated.stage)) {
+    updates.stage = validated.stage;
   }
 
-  if (raw.productId) {
-    const product = PRODUCTS.find(p => p.id === raw.productId);
+  if (validated.productId) {
+    const product = PRODUCTS.find(p => p.id === validated.productId);
     if (product) updates.product = product;
   }
 
-  if (raw.occasion) updates.occasion = raw.occasion;
-  if (raw.vibe) updates.vibe = raw.vibe;
-  if (raw.text && raw.text.length <= 18) updates.text = raw.text;
-  if (raw.iconId) {
-    const icon = ICON_LIBRARY.find(i => i.id === raw.iconId);
+  if (validated.occasion) updates.occasion = validated.occasion;
+  if (validated.vibe) updates.vibe = validated.vibe;
+  if (validated.text) updates.text = validated.text;
+  if (validated.iconId) {
+    const icon = ICON_LIBRARY.find(i => i.id === validated.iconId);
     if (icon) updates.icon = icon.id;
   }
+
+  if (validated.productColor) updates.productColor = validated.productColor;
+  if (validated.textColor) updates.textColor = validated.textColor;
+  if (validated.size) updates.size = validated.size;
+  if (validated.quantity != null) updates.quantity = validated.quantity;
 
   return updates;
 }

@@ -15,6 +15,10 @@ export interface ConversationState {
   vibe?: string;
   text?: string;
   icon?: string;
+  productColor?: string;
+  textColor?: string;
+  size?: string;
+  quantity?: number;
   messages: Message[];
 }
 
