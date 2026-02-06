@@ -173,7 +173,7 @@ export default function CartPage() {
 
                 <div className="flex gap-3">
                   <button
-                    onClick={() => router.push('/create')}
+                    onClick={() => router.push('/')}
                     className="flex-1 py-3 rounded-full bg-[#f7f7f7] hover:bg-[#efefef] transition-all text-sm border border-[#e4e4e4]"
                   >
                     Continue Shopping

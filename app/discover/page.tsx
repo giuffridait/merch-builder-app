@@ -429,10 +429,10 @@ export default function DiscoverPage() {
     <main className="min-h-screen bg-[#ffffff] text-[#111111]">
       <div className="max-w-6xl mx-auto px-6 py-10 pb-40">
         <header className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
             <div className="w-9 h-9 bg-gradient-to-br from-[#e4002b] to-[#ff6b6b] rounded-xl" />
             <span className="text-xl font-bold tracking-tight">MerchForge</span>
-          </div>
+          </Link>
           <div className="flex items-center gap-4">
             <Link
               href="/cart"
