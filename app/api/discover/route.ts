@@ -121,10 +121,10 @@ function fallbackResponse(userMessage: string, state: DiscoverState) {
 
 async function getLLMResponse(userMessage: string, state: DiscoverState, candidates: ReturnType<typeof getInventory>) {
   const systemPrompt = buildSystemPrompt(state, candidates);
-  const llmMessages = [
+  const llmMessages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
     { role: 'system', content: systemPrompt },
     { role: 'user', content: userMessage }
-  ] as const;
+  ];
 
   const raw = await chatCompletion(llmMessages);
   const parsed = extractJson(raw) as LLMResult | null;
