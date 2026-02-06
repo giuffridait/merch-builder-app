@@ -207,6 +207,19 @@ export async function POST(req: NextRequest) {
     const stage = updates.stage || (state.stage === 'welcome' ? 'constraints' : state.stage);
     let results = rankInventory(newConstraints);
     const rationale = llm?.selection?.rationale;
+    let assistantMessageOverride: string | null = null;
+
+    if (updates.color && results.length === 0) {
+      const withoutColor = { ...newConstraints };
+      delete withoutColor.color;
+      const pool = filterInventory(getInventory(), withoutColor);
+      const availableColors = Array.from(new Set(
+        pool.flatMap(item => item.attributes.variants.colors.map(c => c.name))
+      )).sort();
+      assistantMessageOverride = availableColors.length > 0
+        ? `We don’t have ${updates.color} in stock for that request. Available colors: ${availableColors.join(', ')}. Want one of those?`
+        : `We don’t have ${updates.color} in stock for that request. Want me to suggest alternatives?`;
+    }
 
     if (llm?.selection?.primaryIds && llm.selection.primaryIds.length > 0) {
       const orderedIds = [
@@ -222,9 +235,10 @@ export async function POST(req: NextRequest) {
     }
 
     const assistantMessage =
-      results.length > 0
+      assistantMessageOverride ||
+      (results.length > 0
         ? (llm?.assistantMessage || 'Here are the best matches based on your constraints.')
-        : (llm?.assistantMessage || 'Tell me what you need (budget, material, quantity, timing). I’ll shortlist the best products.');
+        : (llm?.assistantMessage || 'Tell me what you need (budget, material, quantity, timing). I’ll shortlist the best products.'));
 
     if (stream) {
       const encoder = new TextEncoder();

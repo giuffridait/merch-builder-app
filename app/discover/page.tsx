@@ -79,7 +79,7 @@ export default function DiscoverPage() {
     const parsed = parseConstraints(userMessage);
     if (optimisticPreview) {
       const merged = { ...state.constraints, ...parsed };
-      const seeded = buildResults(merged);
+      const seeded = buildResults(merged, { relaxColor: !merged.color });
       if (seeded.length > 0) {
         setResults(seeded);
         setLastResults(seeded);
@@ -246,7 +246,7 @@ export default function DiscoverPage() {
           }));
           if (resultsFromStream.length === 0) {
             const merged = { ...state.constraints, ...updates };
-            const seeded = buildResults(merged);
+            const seeded = buildResults(merged, { relaxColor: !merged.color });
             if (seeded.length > 0) {
               setResults(seeded);
               setLastResults(seeded);
@@ -341,14 +341,26 @@ export default function DiscoverPage() {
     return ['Under €30', 'Organic cotton', 'Need 20 pieces', 'White tote'];
   };
 
-  const buildResults = (base: Partial<DiscoverConstraints>) => {
+  const buildResults = (base: Partial<DiscoverConstraints>, options?: { relaxColor?: boolean }) => {
+    const relaxColor = options?.relaxColor ?? true;
     const strict = rankInventory(base);
     if (strict.length > 0) return strict;
-    const relaxedColor = { ...base };
-    delete relaxedColor.color;
-    const noColor = rankInventory(relaxedColor);
-    if (noColor.length > 0) return noColor;
-    const relaxedMaterials = { ...relaxedColor };
+    if (relaxColor) {
+      const relaxedColor = { ...base };
+      delete relaxedColor.color;
+      const noColor = rankInventory(relaxedColor);
+      if (noColor.length > 0) return noColor;
+      const relaxedMaterials = { ...relaxedColor };
+      delete relaxedMaterials.materials;
+      const noMaterials = rankInventory(relaxedMaterials);
+      if (noMaterials.length > 0) return noMaterials;
+      const relaxedLead = { ...relaxedMaterials };
+      delete relaxedLead.leadTimeMax;
+      const noLead = rankInventory(relaxedLead);
+      if (noLead.length > 0) return noLead;
+      return [];
+    }
+    const relaxedMaterials = { ...base };
     delete relaxedMaterials.materials;
     const noMaterials = rankInventory(relaxedMaterials);
     if (noMaterials.length > 0) return noMaterials;
