@@ -466,7 +466,7 @@ export default function DiscoverPage() {
                     className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
-                      className={`max-w-[90%] rounded-2xl px-3 py-2 text-sm ${
+                      className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm ${
                         message.role === 'user'
                           ? 'bg-gradient-to-r from-[#e4002b] to-[#ff6b6b] text-white'
                           : 'bg-[#f7f7f7] border border-[#e4e4e4]'
