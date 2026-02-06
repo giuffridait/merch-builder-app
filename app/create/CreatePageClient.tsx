@@ -576,18 +576,12 @@ export default function CreatePage() {
                   className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-fadeIn`}
                 >
                   <div
-                    className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                    className={`max-w-[85%] rounded-2xl px-4 py-3 ${
                       message.role === 'user'
                         ? 'bg-gradient-to-r from-[#e4002b] to-[#ff6b6b] text-white'
                         : 'bg-[#f7f7f7] border border-[#e4e4e4]'
                     }`}
                   >
-                    {message.role === 'assistant' && (
-                      <div className="flex items-center gap-2 mb-1">
-                        <Sparkles size={16} className="text-[#e4002b]" />
-                        <span className="text-xs text-[#6b6b6b]">AI Assistant</span>
-                      </div>
-                    )}
                     <p className="text-sm leading-relaxed">{message.content}</p>
                   </div>
                 </div>
@@ -639,12 +633,12 @@ export default function CreatePage() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSend()}
                 placeholder="Type your message..."
-                className="flex-1 px-4 py-3 bg-white border border-[#e4e4e4] rounded-xl focus:outline-none focus:border-[#e4002b] transition-all"
+                className="flex-1 px-4 py-3 bg-white border border-[#e4e4e4] rounded-2xl focus:outline-none focus:border-[#e4002b] transition-all"
               />
               <button
                 onClick={handleSend}
                 disabled={!input.trim() || isTyping}
-                className="px-6 py-3 bg-gradient-to-r from-[#e4002b] to-[#ff6b6b] rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+                className="px-6 py-3 bg-gradient-to-r from-[#e4002b] to-[#ff6b6b] rounded-2xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
               >
                 <Send size={20} />
               </button>

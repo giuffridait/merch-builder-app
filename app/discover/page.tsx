@@ -510,12 +510,12 @@ export default function DiscoverPage() {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSend()}
                   placeholder="Tell me what you need..."
-                  className="flex-1 px-3 py-2 bg-white border border-[#e4e4e4] rounded-xl focus:outline-none focus:border-[#e4002b] transition-all text-sm"
+                  className="flex-1 px-4 py-3 bg-white border border-[#e4e4e4] rounded-2xl focus:outline-none focus:border-[#e4002b] transition-all text-sm"
                 />
                 <button
                   onClick={handleSend}
                   disabled={!input.trim() || isTyping}
-                  className="px-4 py-2 bg-gradient-to-r from-[#e4002b] to-[#ff6b6b] rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+                  className="px-5 py-3 bg-gradient-to-r from-[#e4002b] to-[#ff6b6b] rounded-2xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
                 >
                   <Send size={16} />
                 </button>
