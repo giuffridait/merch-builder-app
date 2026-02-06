@@ -123,6 +123,66 @@ function fallbackResponse(userMessage: string, state: DiscoverState) {
   };
 }
 
+function formatConstraintSummary(constraints: DiscoverConstraints) {
+  const parts: string[] = [];
+  if (constraints.category) parts.push(constraints.category);
+  if (constraints.color) parts.push(`${constraints.color} color`);
+  if (constraints.materials && constraints.materials.length > 0) {
+    parts.push(constraints.materials.join(' / '));
+  }
+  if (constraints.size) parts.push(`size ${constraints.size}`);
+  if (constraints.budgetMax != null) parts.push(`under €${constraints.budgetMax}`);
+  if (constraints.leadTimeMax != null) parts.push(`delivery within ${constraints.leadTimeMax} days`);
+  if (constraints.quantity != null) parts.push(`${constraints.quantity} pcs`);
+  return parts.length > 0 ? parts.join(', ') : '';
+}
+
+function describeAlternatives(
+  explicit: Partial<DiscoverConstraints>,
+  base: DiscoverConstraints
+) {
+  const candidates = filterInventory(getInventory(), base);
+  if (explicit.color) {
+    const colors = Array.from(new Set(
+      candidates.flatMap(item => item.attributes.variants.colors.map(c => c.name))
+    )).sort();
+    return colors.length > 0
+      ? `We don’t have ${explicit.color} in stock for that request. Available colors: ${colors.join(', ')}. Want one of those?`
+      : `We don’t have ${explicit.color} in stock for that request. Want me to suggest alternatives?`;
+  }
+  if (explicit.materials && explicit.materials.length > 0) {
+    const materials = Array.from(new Set(
+      candidates.flatMap(item => item.attributes.materials)
+    )).sort();
+    return materials.length > 0
+      ? `We don’t have ${explicit.materials.join(', ')} for that request. Available materials: ${materials.join(', ')}.`
+      : `We don’t have that material in stock. Want me to suggest alternatives?`;
+  }
+  if (explicit.size) {
+    const sizes = Array.from(new Set(
+      candidates.flatMap(item => item.attributes.variants.sizes)
+    )).sort();
+    return sizes.length > 0
+      ? `That size isn’t available for these items. Available sizes: ${sizes.join(', ')}.`
+      : `That size isn’t available. Want me to suggest alternatives?`;
+  }
+  if (explicit.leadTimeMax != null) {
+    const leadTimes = candidates.map(item => item.attributes.lead_time_days).sort((a, b) => a - b);
+    const fastest = leadTimes[0];
+    return fastest != null
+      ? `Fastest available lead time is ${fastest} days. Want me to show those options?`
+      : `We can’t meet that lead time right now. Want me to suggest alternatives?`;
+  }
+  if (explicit.budgetMax != null) {
+    const prices = candidates.map(item => item.price.amount).sort((a, b) => a - b);
+    const lowest = prices[0];
+    return lowest != null
+      ? `The lowest available price is €${lowest}. Want me to show those options?`
+      : `We don’t have options in that budget. Want me to suggest alternatives?`;
+  }
+  return null;
+}
+
 async function getLLMResponse(userMessage: string, state: DiscoverState, candidates: ReturnType<typeof getInventory>) {
   const systemPrompt = buildSystemPrompt(state, candidates);
   const llmMessages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
@@ -209,16 +269,28 @@ export async function POST(req: NextRequest) {
     const rationale = llm?.selection?.rationale;
     let assistantMessageOverride: string | null = null;
 
-    if (updates.color && results.length === 0) {
-      const withoutColor = { ...newConstraints };
-      delete withoutColor.color;
-      const pool = filterInventory(getInventory(), withoutColor);
-      const availableColors = Array.from(new Set(
-        pool.flatMap(item => item.attributes.variants.colors.map(c => c.name))
-      )).sort();
-      assistantMessageOverride = availableColors.length > 0
-        ? `We don’t have ${updates.color} in stock for that request. Available colors: ${availableColors.join(', ')}. Want one of those?`
-        : `We don’t have ${updates.color} in stock for that request. Want me to suggest alternatives?`;
+    if (results.length === 0) {
+      if (parsedUpdates.color) {
+        const withoutColor = { ...newConstraints };
+        delete withoutColor.color;
+        assistantMessageOverride = describeAlternatives({ color: parsedUpdates.color }, withoutColor);
+      } else if (parsedUpdates.materials && parsedUpdates.materials.length > 0) {
+        const withoutMaterials = { ...newConstraints };
+        delete withoutMaterials.materials;
+        assistantMessageOverride = describeAlternatives({ materials: parsedUpdates.materials }, withoutMaterials);
+      } else if (parsedUpdates.size) {
+        const withoutSize = { ...newConstraints };
+        delete withoutSize.size;
+        assistantMessageOverride = describeAlternatives({ size: parsedUpdates.size }, withoutSize);
+      } else if (parsedUpdates.leadTimeMax != null) {
+        const withoutLead = { ...newConstraints };
+        delete withoutLead.leadTimeMax;
+        assistantMessageOverride = describeAlternatives({ leadTimeMax: parsedUpdates.leadTimeMax }, withoutLead);
+      } else if (parsedUpdates.budgetMax != null) {
+        const withoutBudget = { ...newConstraints };
+        delete withoutBudget.budgetMax;
+        assistantMessageOverride = describeAlternatives({ budgetMax: parsedUpdates.budgetMax }, withoutBudget);
+      }
     }
 
     if (llm?.selection?.primaryIds && llm.selection.primaryIds.length > 0) {
@@ -234,10 +306,11 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const summary = formatConstraintSummary(newConstraints);
     const assistantMessage =
       assistantMessageOverride ||
       (results.length > 0
-        ? (llm?.assistantMessage || 'Here are the best matches based on your constraints.')
+        ? `Here are ${results.length} options${summary ? ` for ${summary}` : ''}. Top pick: ${results[0]?.title}.`
         : (llm?.assistantMessage || 'Tell me what you need (budget, material, quantity, timing). I’ll shortlist the best products.'));
 
     if (stream) {

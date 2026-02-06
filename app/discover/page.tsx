@@ -79,7 +79,11 @@ export default function DiscoverPage() {
     const parsed = parseConstraints(userMessage);
     if (optimisticPreview) {
       const merged = { ...state.constraints, ...parsed };
-      const seeded = buildResults(merged, { relaxColor: !merged.color });
+      const seeded = buildResults(merged, {
+        relaxColor: !merged.color,
+        relaxMaterials: !merged.materials,
+        relaxLeadTime: !merged.leadTimeMax
+      });
       if (seeded.length > 0) {
         setResults(seeded);
         setLastResults(seeded);
@@ -246,7 +250,11 @@ export default function DiscoverPage() {
           }));
           if (resultsFromStream.length === 0) {
             const merged = { ...state.constraints, ...updates };
-            const seeded = buildResults(merged, { relaxColor: !merged.color });
+            const seeded = buildResults(merged, {
+              relaxColor: !merged.color,
+              relaxMaterials: !merged.materials,
+              relaxLeadTime: !merged.leadTimeMax
+            });
             if (seeded.length > 0) {
               setResults(seeded);
               setLastResults(seeded);
@@ -341,8 +349,13 @@ export default function DiscoverPage() {
     return ['Under €30', 'Organic cotton', 'Need 20 pieces', 'White tote'];
   };
 
-  const buildResults = (base: Partial<DiscoverConstraints>, options?: { relaxColor?: boolean }) => {
+  const buildResults = (
+    base: Partial<DiscoverConstraints>,
+    options?: { relaxColor?: boolean; relaxMaterials?: boolean; relaxLeadTime?: boolean }
+  ) => {
     const relaxColor = options?.relaxColor ?? true;
+    const relaxMaterials = options?.relaxMaterials ?? true;
+    const relaxLeadTime = options?.relaxLeadTime ?? true;
     const strict = rankInventory(base);
     if (strict.length > 0) return strict;
     if (relaxColor) {
@@ -350,24 +363,50 @@ export default function DiscoverPage() {
       delete relaxedColor.color;
       const noColor = rankInventory(relaxedColor);
       if (noColor.length > 0) return noColor;
-      const relaxedMaterials = { ...relaxedColor };
+      if (relaxMaterials) {
+        const relaxedMaterials = { ...relaxedColor };
+        delete relaxedMaterials.materials;
+        const noMaterials = rankInventory(relaxedMaterials);
+        if (noMaterials.length > 0) return noMaterials;
+        if (relaxLeadTime) {
+          const relaxedLead = { ...relaxedMaterials };
+          delete relaxedLead.leadTimeMax;
+          const noLead = rankInventory(relaxedLead);
+          if (noLead.length > 0) return noLead;
+          return [];
+        }
+        return [];
+      }
+      if (relaxLeadTime) {
+        const relaxedLead = { ...relaxedColor };
+        delete relaxedLead.leadTimeMax;
+        const noLead = rankInventory(relaxedLead);
+        if (noLead.length > 0) return noLead;
+        return [];
+      }
+      return [];
+    }
+    if (relaxMaterials) {
+      const relaxedMaterials = { ...base };
       delete relaxedMaterials.materials;
       const noMaterials = rankInventory(relaxedMaterials);
       if (noMaterials.length > 0) return noMaterials;
-      const relaxedLead = { ...relaxedMaterials };
+      if (relaxLeadTime) {
+        const relaxedLead = { ...relaxedMaterials };
+        delete relaxedLead.leadTimeMax;
+        const noLead = rankInventory(relaxedLead);
+        if (noLead.length > 0) return noLead;
+        return [];
+      }
+      return [];
+    }
+    if (relaxLeadTime) {
+      const relaxedLead = { ...base };
       delete relaxedLead.leadTimeMax;
       const noLead = rankInventory(relaxedLead);
       if (noLead.length > 0) return noLead;
       return [];
     }
-    const relaxedMaterials = { ...base };
-    delete relaxedMaterials.materials;
-    const noMaterials = rankInventory(relaxedMaterials);
-    if (noMaterials.length > 0) return noMaterials;
-    const relaxedLead = { ...relaxedMaterials };
-    delete relaxedLead.leadTimeMax;
-    const noLead = rankInventory(relaxedLead);
-    if (noLead.length > 0) return noLead;
     return [];
   };
 
