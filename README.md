@@ -12,6 +12,7 @@ MerchForge is a Next.js app that pairs a conversational assistant with a product
 
 ### Customization Flow
 - Guided design conversation
+- Fully agentic updates (product, text, colors, size, quantity)
 - Text-only or icon-based designs (icon optional)
 - 3 SVG design variants with a recommended pick
 - Live preview with color-specific product images
@@ -111,7 +112,8 @@ merch-builder-app/
 │   ├── icons.ts              # Icon library + keyword matching
 │   ├── design.ts             # SVG variant generation
 │   ├── cart.ts               # LocalStorage cart management
-│   └── agent.ts              # Conversational AI logic
+│   ├── agent.ts              # Conversational AI logic
+│   └── customization-constraints.ts # Customization limits + validation
 ├── data/
 │   ├── inventory.acp.json    # Inventory schema
 │   └── ucp-capabilities.json # Capability flags
@@ -163,13 +165,16 @@ Edit `lib/icons.ts` and add keyword mappings.
 
 ### Adjust AI Responses
 - Discovery: `app/api/discover/route.ts`
-- Customization: `lib/agent.ts`
+- Customization: `app/api/chat/route.ts` + `lib/agent.ts`
 
 ### Add New Design Variants
 Edit `lib/design.ts` to add a new SVG generator.
 
 ### Product Preview Images
 Color-specific preview images are mapped in `lib/catalog.ts` under `imageUrlByColor`.
+
+### Customization Constraints
+Defined in `lib/customization-constraints.ts` (text length, quantities, allowed colors/vibes/occasions).
 
 ## License
 
