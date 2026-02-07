@@ -2,7 +2,7 @@ import { ICON_LIBRARY } from './icons';
 import { PRODUCTS } from './catalog';
 
 export const CUSTOMIZATION_LIMITS = {
-  textMaxLength: 18,
+  textMaxLength: 50,
   minQuantity: 1,
   maxQuantity: 99
 };

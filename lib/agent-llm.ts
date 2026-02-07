@@ -46,6 +46,7 @@ function buildSystemPrompt(state: ConversationState) {
     'Avoid excessive confirmations. Ask only one question at a time.',
     'Return ONLY a JSON object with this shape:',
     '{ "assistant": string, "updates": { "stage"?: string, "productId"?: string, "occasion"?: string, "vibe"?: string, "text"?: string, "iconId"?: string, "productColor"?: string, "textColor"?: string, "size"?: string, "quantity"?: number, "action"?: "add_to_cart" | "remove_icon" } }',
+    'IMPORTANT: You MUST return valid JSON. Do not include any text outside the JSON object.',
     'Do not include markdown or code fences.',
     'Only use productId and iconId values from the provided lists.',
     'Use the current state to decide the next stage. Progression is: welcome -> product -> intent -> text -> icon -> preview.',
@@ -141,8 +142,19 @@ export async function getLLMResponse(
     { role: 'user', content: userMessage }
   ];
 
-  const raw = await chatCompletion(llmMessages);
-  const parsed = extractJson(raw) as LLMResult | null;
+  let raw = await chatCompletion(llmMessages);
+  let parsed = extractJson(raw) as LLMResult | null;
+
+  // Self-correction retry if JSON is invalid
+  if (!parsed) {
+    console.log('Invalid JSON received, attempting self-correction...');
+    llmMessages.push({ role: 'assistant', content: raw });
+    llmMessages.push({ role: 'system', content: 'You failed to provide valid JSON. Please correct your previous response and return ONLY a valid JSON object.' });
+
+    raw = await chatCompletion(llmMessages);
+    parsed = extractJson(raw) as LLMResult | null;
+  }
+
   const validated = validateLLMResult(parsed);
   if (validated) return validated;
 

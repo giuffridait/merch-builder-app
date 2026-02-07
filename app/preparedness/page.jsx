@@ -60,6 +60,38 @@ export default function PreparednessPage() {
           </div>
 
           <div className="mt-8 border border-[#e4e4e4] rounded-xl p-6 bg-[#f7f7f7]">
+            <h3 className="text-sm font-semibold text-[#6b6b6b] mb-3">Agentic Workflow & Prompts</h3>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="text-sm text-[#6b6b6b] space-y-3">
+                <h4 className="font-medium text-[#111111]">State Machine (React + Server Actions)</h4>
+                <p>The conversation is managed by a state machine with the following stages:</p>
+                <div className="flex flex-wrap gap-2 text-xs">
+                  {['welcome', 'product', 'intent', 'text', 'icon', 'preview'].map(stage => (
+                    <span key={stage} className="px-2 py-1 bg-white border border-[#e4e4e4] rounded-md">{stage}</span>
+                  ))}
+                </div>
+                <p>
+                  User input is sent to a server action (<code>chatWithAgent</code>), which calls an LLM (Ollama/Groq) with the current conversation history and state.
+                </p>
+                <p>
+                  The LLM returns a JSON object containing the assistant's reply and any state updates (e.g., changing the product color, setting the text).
+                </p>
+              </div>
+
+              <div className="text-sm text-[#6b6b6b] space-y-3">
+                <h4 className="font-medium text-[#111111]">System Prompt Highlights</h4>
+                <ul className="list-disc pl-4 space-y-1">
+                  <li><strong>Persona:</strong> "Friendly, confident merch design assistant."</li>
+                  <li><strong>Output:</strong> Strict JSON format for state updates.</li>
+                  <li><strong>Constraints:</strong> Enforces valid colors, vibes, occasions, and text length.</li>
+                  <li><strong>Logic:</strong> Decides the next stage based on missing information (e.g., if product is selected but color is missing, ask for color).</li>
+                  <li><strong>Fallback:</strong> Gracefully handles API failures with a generic response.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 border border-[#e4e4e4] rounded-xl p-6 bg-[#f7f7f7]">
             <h3 className="text-sm font-semibold text-[#6b6b6b] mb-3">Available Capabilities</h3>
             <div className="grid sm:grid-cols-2 gap-3 text-sm">
               {Object.entries(data.capabilities).map(([key, value]) => (
