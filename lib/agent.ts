@@ -24,8 +24,7 @@ export interface ConversationState {
 export function shouldGenerateDesigns(state: ConversationState): boolean {
   return state.stage === 'icon' &&
     !!state.product &&
-    !!state.text &&
-    !!state.icon;
+    (!!state.text || !!state.icon);
 }
 
 export function suggestSlogans(occasion?: string, vibe?: string): string[] {

@@ -198,10 +198,10 @@ export default function CreatePage() {
     const isAddToCartIntent = /add to cart|checkout|ready to buy|buy now/i.test(userMessage);
     if (isAddToCartIntent) {
       setIsTyping(false);
-      if (!state.product || !state.text || !selectedColor) {
+      if (!state.product || (!state.text && !state.icon) || !selectedColor) {
         const missing: string[] = [];
         if (!state.product) missing.push('product');
-        if (!state.text) missing.push('text');
+        if (!state.text && !state.icon) missing.push('text or icon');
         if (!selectedColor) missing.push('product color');
         addMessage('assistant', `To add to cart, I still need: ${missing.join(', ')}.`);
         return;
@@ -277,7 +277,7 @@ export default function CreatePage() {
         setQuantity(updates.quantity);
       }
 
-      if (shouldGenerateDesigns(updatedState) || (updatedState.stage === 'icon' && updatedState.text && updatedState.icon)) {
+      if (shouldGenerateDesigns(updatedState) || (updatedState.stage === 'icon' && (updatedState.text || updatedState.icon))) {
         console.log('[DEBUG] Design generation triggered', {
           shouldGenerate: shouldGenerateDesigns(updatedState),
           stage: updatedState.stage,
@@ -290,8 +290,8 @@ export default function CreatePage() {
         await new Promise(resolve => setTimeout(resolve, 1500));
 
         const generated = generateVariants(
-          updatedState.text!,
-          findIconByKeyword(updatedState.icon!),
+          updatedState.text || '',
+          findIconByKeyword(updatedState.icon || 'star'),
           updatedState.vibe,
           updatedState.occasion
         );
@@ -608,7 +608,7 @@ export default function CreatePage() {
             </div>
 
             {/* Design Variants */}
-            {state.text && state.product && (
+            {(state.text || state.icon) && state.product && (
               <div className="space-y-4 animate-fadeIn">
                 <h3 className="text-sm font-medium text-[#6b6b6b]">DESIGN VARIANTS</h3>
                 <div className="text-xs text-[#6b6b6b]">
@@ -794,15 +794,15 @@ export default function CreatePage() {
 
                   <button
                     onClick={handleAddToCart}
-                    disabled={!selectedColor || !state.text}
+                    disabled={!selectedColor || (!state.text && !state.icon)}
                     className="w-full py-4 rounded-xl bg-gradient-to-r from-[#e4002b] to-[#ff6b6b] hover:opacity-90 transition-all font-bold text-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <ShoppingCart size={20} />
                     Add to Cart • €{((state.product!.basePrice + PRINT_FEE) * quantity).toFixed(2)}
                   </button>
-                  {(!selectedColor || !state.text) && (
+                  {(!selectedColor || (!state.text && !state.icon)) && (
                     <div className="text-xs text-[#6b6b6b]">
-                      Add a short text and choose a product color to enable add to cart.
+                      Add text or an icon and choose a product color to enable add to cart.
                     </div>
                   )}
                   <div className="text-xs text-[#6b6b6b]">
