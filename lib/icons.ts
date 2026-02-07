@@ -5,6 +5,7 @@ export interface Icon {
 }
 
 export const ICON_LIBRARY: Icon[] = [
+  { id: 'none', path: '', keywords: ['none', 'no icon', 'remove icon', 'remove', 'plain', 'text only'] },
   { id: 'heart', path: 'M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z', keywords: ['love', 'heart', 'valentine', 'romantic', 'favorite', 'like'] },
   { id: 'star', path: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', keywords: ['star', 'favorite', 'rating', 'award', 'achievement', 'excellence'] },
   { id: 'coffee', path: 'M18 8h1a4 4 0 0 1 0 8h-1M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z', keywords: ['coffee', 'drink', 'cafe', 'morning', 'caffeine', 'espresso', 'tea'] },

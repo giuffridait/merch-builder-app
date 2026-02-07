@@ -270,7 +270,11 @@ export default function CreatePage() {
       setFallbackNotice(!!data.fallbackUsed);
       const updates = data.updates || {};
 
-      if (state.stage === 'icon' && !updates.icon) {
+      if (updates.action === 'remove_icon') {
+        updates.icon = 'none';
+      }
+
+      if (state.stage === 'icon' && !updates.icon && updates.action !== 'remove_icon') {
         const icon = findIconByKeyword(userMessage);
         updates.icon = icon.id;
       }
@@ -393,7 +397,11 @@ export default function CreatePage() {
             setFallbackNotice(false);
           }
           const mergedUpdates = updates || {};
-          if (state.stage === 'icon' && !mergedUpdates.icon) {
+          if (mergedUpdates.action === 'remove_icon') {
+            mergedUpdates.icon = 'none';
+          }
+
+          if (state.stage === 'icon' && !mergedUpdates.icon && mergedUpdates.action !== 'remove_icon') {
             const icon = findIconByKeyword(userMessage);
             mergedUpdates.icon = icon.id;
           }

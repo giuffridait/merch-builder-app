@@ -35,7 +35,7 @@ export type CustomizationUpdates = {
   textColor?: string;
   size?: string;
   quantity?: number;
-  action?: 'add_to_cart';
+  action?: 'add_to_cart' | 'remove_icon';
 };
 
 export function normalizeText(text?: string) {
@@ -90,6 +90,10 @@ export function validateCustomizationUpdates(raw: any): CustomizationUpdates {
       Math.max(CUSTOMIZATION_LIMITS.minQuantity, Math.floor(raw.quantity))
     );
     updates.quantity = qty;
+  }
+
+  if (typeof raw.action === 'string' && (raw.action === 'add_to_cart' || raw.action === 'remove_icon')) {
+    updates.action = raw.action;
   }
 
   return updates;
