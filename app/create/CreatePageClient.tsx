@@ -298,6 +298,18 @@ export default function CreatePage() {
     </svg>
   `;
 
+  // Add hardcoded text-only variant
+  const textOnlyVariant: DesignVariant = {
+    id: 'text-only',
+    name: 'Text Only',
+    style: 'Modern & Clean',
+    svg: state.text ? buildTextOnlySVG(state.text) : '',
+    score: 80,
+    reasoning: 'Simple and effective.'
+  };
+
+  const allDesigns = designs ? [textOnlyVariant, ...designs] : null;
+
   const handleAddToCart = () => {
     if (!state.product) return;
     if (!selectedColor || !state.text) {
@@ -305,12 +317,16 @@ export default function CreatePage() {
       return;
     }
 
-    const fallbackVariantId = designs?.[0]?.id || 'Text';
+    const fallbackVariantId = designs?.[0]?.id || 'text-only';
     const activeVariantId = selectedVariant || fallbackVariantId;
-    const variant = designs?.find(v => v.id === activeVariantId);
+
+    // Find in all designs (we need to account for text-only being injected)
+    const variant = (designs || []).find(v => v.id === activeVariantId) || (activeVariantId === 'text-only' ? textOnlyVariant : undefined);
     const designSvg = variant?.svg || buildTextOnlySVG(state.text);
 
     const itemPrice = state.product.basePrice + PRINT_FEE;
+
+    const isTextOnly = activeVariantId === 'text-only';
 
     const newCart = addToCart({
       productId: state.product.id,
@@ -322,7 +338,7 @@ export default function CreatePage() {
       variant: activeVariantId,
       designSVG: designSvg,
       text: state.text!,
-      icon: state.icon || 'none',
+      icon: isTextOnly ? 'none' : (state.icon || 'none'),
       price: itemPrice,
       total: itemPrice * quantity,
       currency: 'EUR',
@@ -392,8 +408,8 @@ export default function CreatePage() {
                   >
                     <div
                       className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm ${message.role === 'user'
-                          ? 'bg-gradient-to-r from-[#e4002b] to-[#ff6b6b] text-white'
-                          : 'bg-[#f7f7f7] border border-[#e4e4e4]'
+                        ? 'bg-gradient-to-r from-[#e4002b] to-[#ff6b6b] text-white'
+                        : 'bg-[#f7f7f7] border border-[#e4e4e4]'
                         }`}
                     >
                       <p className="leading-relaxed">{message.content}</p>
@@ -499,7 +515,7 @@ export default function CreatePage() {
                         transformOrigin: 'center'
                       }}
                       dangerouslySetInnerHTML={{
-                        __html: designs.find(v => v.id === selectedVariant)?.svg || ''
+                        __html: (allDesigns?.find(v => v.id === selectedVariant)?.svg) || ''
                       }}
                     />
                   )}
@@ -569,14 +585,14 @@ export default function CreatePage() {
                     ? 'Pick a variant or skip to keep text‑only.'
                     : 'Add an icon to generate design variants, or continue with text‑only.'}
                 </div>
-                <div className="grid sm:grid-cols-3 gap-3">
-                  {(designs || []).map((variant) => (
+                <div className="grid sm:grid-cols-2 gap-3">
+                  {(allDesigns || []).map((variant) => (
                     <button
                       key={variant.id}
                       onClick={() => setSelectedVariant(variant.id)}
                       className={`rounded-2xl border-2 p-3 text-left transition-all ${selectedVariant === variant.id
-                          ? 'border-[#e4002b] bg-[#fff5f6]'
-                          : 'border-[#e4e4e4] bg-white hover:border-[#cfcfcf]'
+                        ? 'border-[#e4002b] bg-[#fff5f6]'
+                        : 'border-[#e4e4e4] bg-white hover:border-[#cfcfcf]'
                         }`}
                     >
                       <div className="h-28 rounded-xl bg-[#f7f7f7] border border-[#e4e4e4] flex items-center justify-center mb-3">
@@ -586,15 +602,13 @@ export default function CreatePage() {
                           dangerouslySetInnerHTML={{ __html: variant.svg }}
                         />
                       </div>
-                      <div className="text-sm font-semibold">Variant {variant.id}</div>
-                      <div className="text-xs text-[#6b6b6b] mt-1">{variant.name}</div>
-                      <div className="text-xs text-[#6b6b6b] mt-2">Score {variant.score}/100</div>
-                      {selectedVariant === variant.id && (
-                        <div className="mt-2 inline-flex items-center gap-1 text-xs text-[#e4002b] font-semibold">
-                          <Check size={14} />
-                          Selected
-                        </div>
-                      )}
+                      <div className="text-sm font-semibold flex items-center justify-between">
+                        {variant.name}
+                        {selectedVariant === variant.id && (
+                          <span className="text-xs bg-[#e4002b] text-white px-2 py-0.5 rounded-full">Selected</span>
+                        )}
+                      </div>
+                      <div className="text-xs text-[#6b6b6b] mt-1 line-clamp-2">{variant.style}</div>
                     </button>
                   ))}
                 </div>
@@ -724,8 +738,8 @@ export default function CreatePage() {
                             key={size}
                             onClick={() => setSelectedSize(size)}
                             className={`px-4 py-2 rounded-lg border-2 transition-all text-sm ${selectedSize === size
-                                ? 'bg-[#f7f7f7] border-[#e4002b]'
-                                : 'bg-white border-transparent hover:border-[#e4e4e4]'
+                              ? 'bg-[#f7f7f7] border-[#e4002b]'
+                              : 'bg-white border-transparent hover:border-[#e4e4e4]'
                               }`}
                           >
                             {size}
@@ -769,6 +783,6 @@ export default function CreatePage() {
           </div>
         </div>
       </div>
-    </div>
+    </div >
   );
 }
