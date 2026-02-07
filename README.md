@@ -22,6 +22,7 @@ MerchForge is a Next.js app that pairs a conversational assistant with a product
 ### Commerce Preparedness
 - ACP/UCP readiness documentation
 - Inventory schema + capability flags
+- **Agentic Workflow Documentation**: Detailed explanation of state machine and prompts (`/preparedness`)
 
 ## Getting Started
 
@@ -102,8 +103,9 @@ merch-builder-app/
 │   ├── preparedness/
 │   │   └── page.jsx          # ACP/UCP readiness
 │   ├── api/
-│   │   ├── chat/route.ts     # Customization assistant
+│   │   ├── chat/route.ts     # Customization assistant (API)
 │   │   └── discover/route.ts # Inventory assistant
+│   ├── actions.ts            # Server Actions (Agentic Chat)
 │   ├── layout.tsx            # Root layout
 │   ├── page.tsx              # Home
 │   └── globals.css           # Global styles
@@ -165,7 +167,7 @@ Edit `lib/icons.ts` and add keyword mappings.
 
 ### Adjust AI Responses
 - Discovery: `app/api/discover/route.ts`
-- Customization: `app/api/chat/route.ts` + `lib/agent.ts`
+- Customization: `app/actions.ts` (Server Action) or `app/api/chat/route.ts` (API) + `lib/agent-llm.ts`
 
 ### Add New Design Variants
 Edit `lib/design.ts` to add a new SVG generator.

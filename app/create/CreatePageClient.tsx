@@ -225,10 +225,12 @@ export default function CreatePage() {
         updates.icon = icon.id;
       }
 
-      const newState = { ...state, ...updates };
-
-      // Use functional update to avoid stale closure state
-      setState(prev => ({ ...prev, ...updates }));
+      // Capture the complete updated state by using functional update and tracking the result
+      let updatedState: ConversationState = state;
+      setState(prev => {
+        updatedState = { ...prev, ...updates };
+        return updatedState;
+      });
 
       if (updates.action === 'add_to_cart') {
         handleAddToCart();
@@ -236,8 +238,8 @@ export default function CreatePage() {
         return;
       }
 
-      if (updates.productColor && newState.product) {
-        const match = newState.product.colors.find(
+      if (updates.productColor && updatedState.product) {
+        const match = updatedState.product.colors.find(
           (c: { name: string; hex: string }) => c.name.toLowerCase() === updates.productColor?.toLowerCase()
         );
         if (match) setSelectedColor(match);
@@ -249,24 +251,24 @@ export default function CreatePage() {
           setTextColorAuto(false);
         }
       }
-      if (updates.size && newState.product?.sizes?.includes(updates.size)) {
+      if (updates.size && updatedState.product?.sizes?.includes(updates.size)) {
         setSelectedSize(updates.size);
       }
       if (updates.quantity) {
         setQuantity(updates.quantity);
       }
 
-      if (shouldGenerateDesigns(newState) || (newState.stage === 'icon' && newState.text && newState.icon)) {
+      if (shouldGenerateDesigns(updatedState) || (updatedState.stage === 'icon' && updatedState.text && updatedState.icon)) {
         setIsTyping(false);
         addMessage('assistant', 'Perfect! Let me generate 3 design variants for you... ✨');
 
         await new Promise(resolve => setTimeout(resolve, 1500));
 
         const generated = generateVariants(
-          newState.text!,
-          findIconByKeyword(newState.icon!),
-          newState.vibe,
-          newState.occasion
+          updatedState.text!,
+          findIconByKeyword(updatedState.icon!),
+          updatedState.vibe,
+          updatedState.occasion
         );
 
         setDesigns(generated.variants);
