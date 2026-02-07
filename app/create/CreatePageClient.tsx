@@ -7,6 +7,7 @@ import { PRODUCTS, PRINT_FEE, Product } from '@/lib/catalog';
 import { findIconByKeyword, ICON_LIBRARY } from '@/lib/icons';
 import { generateVariants, getContrastColor, DesignVariant } from '@/lib/design';
 import { addToCart, getCart } from '@/lib/cart';
+import { chatWithAgent } from '@/app/actions';
 import {
   Message,
   ConversationState,
@@ -105,15 +106,6 @@ export default function CreatePage() {
     return text.includes('material') || text.includes('fabric');
   };
 
-  const updateMessageContent = (id: string, append: string) => {
-    setState(prev => ({
-      ...prev,
-      messages: prev.messages.map(message =>
-        message.id === id ? { ...message, content: message.content + append } : message
-      )
-    }));
-  };
-
   useEffect(() => {
     setCart(getCart());
   }, []);
@@ -206,69 +198,20 @@ export default function CreatePage() {
       return;
     }
 
-    // Agentic v2: no client-side parsing. All updates are driven by the LLM.
+    // Agentic v2: all updates are driven by the LLM (server action, no streaming).
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('timeout')), requestTimeoutMs)
+    );
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), requestTimeoutMs);
-
-    const trimmedMessages = state.messages.map(m => ({ role: m.role, content: m.content }));
-    let streamRes: Response;
     try {
-      streamRes = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userMessage,
-          state,
-          stream: true,
-          messages: trimmedMessages
-        }),
-        signal: controller.signal
-      });
-    } catch (err: any) {
-      clearTimeout(timeoutId);
-      setIsTyping(false);
-      addMessage('assistant', 'The AI is taking too long to respond. Please try again in a moment.');
-      return;
-    } finally {
-      clearTimeout(timeoutId);
-    }
+      const history = state.messages.map(m => ({ role: m.role, content: m.content }));
+      const data = await Promise.race([
+        chatWithAgent(history, state, userMessage),
+        timeout
+      ]);
 
-    const isStream = streamRes.ok && streamRes.headers.get('content-type')?.includes('text/event-stream');
-
-    if (!isStream || !streamRes.body) {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), requestTimeoutMs);
-      let res: Response;
-      try {
-        res = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userMessage,
-            state,
-            messages: trimmedMessages
-          }),
-          signal: controller.signal
-        });
-      } catch (err: any) {
-        clearTimeout(timeoutId);
-        setIsTyping(false);
-        addMessage('assistant', 'The AI is taking too long to respond. Please try again in a moment.');
-        return;
-      } finally {
-        clearTimeout(timeoutId);
-      }
-
-      if (!res.ok) {
-        setIsTyping(false);
-        addMessage('assistant', 'Sorry, I had trouble reaching the AI. Try again in a moment.');
-        return;
-      }
-
-      const data = await res.json();
-      setFallbackNotice(!!data.fallbackUsed);
-      const updates = data.updates || {};
+      setFallbackNotice(false);
+      const updates = (data as any)?.updates || {};
 
       if (updates.action === 'remove_icon') {
         updates.icon = 'none';
@@ -331,143 +274,11 @@ export default function CreatePage() {
       }
 
       setIsTyping(false);
-      addMessage('assistant', data.assistantMessage || "I'm here to help! What would you like to do?");
-      return;
+      addMessage('assistant', (data as any)?.assistantMessage || "I'm here to help! What would you like to do?");
+    } catch (err) {
+      setIsTyping(false);
+      addMessage('assistant', 'The AI is taking too long to respond. Please try again in a moment.');
     }
-
-    const assistantId = Date.now().toString();
-    setState(prev => ({
-      ...prev,
-      messages: [
-        ...prev.messages,
-        { id: assistantId, role: 'assistant', content: '', timestamp: Date.now() }
-      ]
-    }));
-
-    setFallbackNotice(false);
-    const decoder = new TextDecoder();
-    const reader = streamRes.body.getReader();
-    let buffer = '';
-    let updates: any = {};
-    let lastChunkAt = Date.now();
-
-    const streamTimeout = setInterval(() => {
-      if (Date.now() - lastChunkAt > requestTimeoutMs) {
-        reader.cancel();
-      }
-    }, 1000);
-
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      lastChunkAt = Date.now();
-      buffer += decoder.decode(value, { stream: true });
-
-      let idx;
-      while ((idx = buffer.indexOf('\n\n')) >= 0) {
-        const chunk = buffer.slice(0, idx);
-        buffer = buffer.slice(idx + 2);
-
-        let event = 'message';
-        let data = '';
-        const lines = chunk.split('\n');
-        for (const line of lines) {
-          if (line.startsWith('event:')) event = line.replace('event:', '').trim();
-          if (line.startsWith('data:')) data += line.replace('data:', '').trim();
-        }
-
-        if (event === 'updates') {
-          try {
-            updates = JSON.parse(data);
-          } catch {
-            updates = {};
-          }
-        } else if (event === 'delta') {
-          try {
-            const delta = JSON.parse(data);
-            updateMessageContent(assistantId, typeof delta === 'string' ? delta : '');
-          } catch {
-            updateMessageContent(assistantId, data);
-          }
-        } else if (event === 'done') {
-          try {
-            const donePayload = JSON.parse(data);
-            setFallbackNotice(!!donePayload?.fallbackUsed);
-          } catch {
-            setFallbackNotice(false);
-          }
-          const mergedUpdates = updates || {};
-          if (mergedUpdates.action === 'remove_icon') {
-            mergedUpdates.icon = 'none';
-          }
-
-          if (state.stage === 'icon' && !mergedUpdates.icon && mergedUpdates.action !== 'remove_icon') {
-            const icon = findIconByKeyword(userMessage);
-            mergedUpdates.icon = icon.id;
-          }
-
-          const newState = { ...state, ...mergedUpdates };
-          setState(prev => ({ ...prev, ...mergedUpdates }));
-
-          if (mergedUpdates.action === 'add_to_cart') {
-            handleAddToCart();
-            setIsTyping(false);
-            clearInterval(streamTimeout);
-            return;
-          }
-
-          if (mergedUpdates.productColor && newState.product) {
-            const match = newState.product.colors.find(
-              (c: { name: string; hex: string }) => c.name.toLowerCase() === mergedUpdates.productColor.toLowerCase()
-            );
-            if (match) setSelectedColor(match);
-          }
-          if (mergedUpdates.textColor) {
-            const map = COLOR_MAP[mergedUpdates.textColor.toLowerCase()];
-            if (map) {
-              setTextColor(map);
-              setTextColorAuto(false);
-            }
-          }
-          if (mergedUpdates.size && newState.product?.sizes?.includes(mergedUpdates.size)) {
-            setSelectedSize(mergedUpdates.size);
-          }
-          if (mergedUpdates.quantity) {
-            setQuantity(mergedUpdates.quantity);
-          }
-
-          if (shouldGenerateDesigns(newState) || (newState.stage === 'icon' && newState.text && newState.icon)) {
-            setIsTyping(false);
-            addMessage('assistant', 'Perfect! Let me generate 3 design variants for you... ✨');
-            
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            
-            const generated = generateVariants(
-              newState.text!,
-              findIconByKeyword(newState.icon!),
-              newState.vibe,
-              newState.occasion
-            );
-            
-            setDesigns(generated.variants);
-            setSelectedVariant(generated.recommended);
-            
-            setState(prev => ({ ...prev, stage: 'preview' }));
-            addMessage('assistant', `I've created 3 designs for you! Variant ${generated.recommended} is my top recommendation based on your preferences. You can pick any variant, adjust colors and size, then add to cart.`);
-            setIsTyping(false);
-            return;
-          }
-
-          setIsTyping(false);
-          clearInterval(streamTimeout);
-          return;
-        }
-      }
-    }
-
-    clearInterval(streamTimeout);
-    setIsTyping(false);
-    addMessage('assistant', 'The AI is taking too long to respond. Please try again in a moment.');
   };
 
   const handleQuickAction = (action: string) => {
