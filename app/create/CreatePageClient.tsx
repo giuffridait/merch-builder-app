@@ -204,7 +204,10 @@ export default function CreatePage() {
     );
 
     try {
-      const history = state.messages.map(m => ({ role: m.role, content: m.content }));
+      const history = [
+        ...state.messages.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+        { role: 'user' as const, content: userMessage }
+      ];
       const data = await Promise.race([
         chatWithAgent(history, state, userMessage),
         timeout
@@ -223,7 +226,9 @@ export default function CreatePage() {
       }
 
       const newState = { ...state, ...updates };
-      setState(newState);
+
+      // Use functional update to avoid stale closure state
+      setState(prev => ({ ...prev, ...updates }));
 
       if (updates.action === 'add_to_cart') {
         handleAddToCart();
@@ -233,7 +238,7 @@ export default function CreatePage() {
 
       if (updates.productColor && newState.product) {
         const match = newState.product.colors.find(
-          (c: { name: string; hex: string }) => c.name.toLowerCase() === updates.productColor.toLowerCase()
+          (c: { name: string; hex: string }) => c.name.toLowerCase() === updates.productColor?.toLowerCase()
         );
         if (match) setSelectedColor(match);
       }
@@ -274,7 +279,6 @@ export default function CreatePage() {
       }
 
       setIsTyping(false);
-      addMessage('assistant', (data as any)?.assistantMessage || "I'm here to help! What would you like to do?");
       addMessage('assistant', (data as any)?.assistantMessage || "I'm here to help! What would you like to do?");
     } catch (err) {
       console.error('LLM Error:', err);
