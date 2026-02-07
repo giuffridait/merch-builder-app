@@ -1,7 +1,7 @@
 export interface Product {
   id: string;
   name: string;
-  category: 'tee' | 'hoodie' | 'tote' | 'mug';
+  category: 'tee' | 'hoodie' | 'tote';
   basePrice: number;
   colors: { name: string; hex: string }[];
   sizes: string[] | null;
@@ -74,24 +74,6 @@ export const PRODUCTS: Product[] = [
     imageUrlByColor: {
       natural: '/images/products/tote-natural-canvas.png',
       black: '/images/products/tote-black-canvas.png'
-    }
-  },
-  {
-    id: 'mug',
-    name: 'Ceramic Mug',
-    category: 'mug',
-    basePrice: 12.99,
-    colors: [
-      { name: 'White', hex: '#ffffff' },
-      { name: 'Black', hex: '#1a1a1a' },
-    ],
-    sizes: null,
-    printArea: { x: 20, y: 30, w: 60, h: 40 },
-    emoji: '☕',
-    imageUrl: '/images/products/mug-white-ceramic.png',
-    imageUrlByColor: {
-      white: '/images/products/mug-white-ceramic.png',
-      black: '/images/products/mug-black-ceramic.png'
     }
   }
 ];

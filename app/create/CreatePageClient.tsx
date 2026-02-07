@@ -31,7 +31,7 @@ export default function CreatePage() {
       {
         id: '1',
         role: 'assistant',
-        content: "What would you like to make? A tee, hoodie, tote, or mug?",
+        content: "What would you like to make? A tee, hoodie, or tote?",
         timestamp: Date.now()
       }
     ]
@@ -95,7 +95,7 @@ export default function CreatePage() {
   };
 
   const extractQuantity = (message: string) => {
-    const match = message.match(/(\d+)\s*(?:pcs|pieces|items|qty|quantity|shirts|hoodies|totes|mugs)?/i);
+    const match = message.match(/(\d+)\s*(?:pcs|pieces|items|qty|quantity|shirts|hoodies|totes)?/i);
     if (!match) return null;
     const value = parseInt(match[1], 10);
     return Number.isNaN(value) ? null : value;
@@ -383,7 +383,7 @@ export default function CreatePage() {
     switch (state.stage) {
       case 'welcome':
       case 'product':
-        return ['Tee for a gift', 'Hoodie for my team', 'Tote bag for myself', 'Mug for a friend'];
+        return ['Tee for a gift', 'Hoodie for my team', 'Tote bag for myself'];
       case 'intent':
         return ['Birthday gift, bold', 'Team shirt, minimal', 'Personal, retro style'];
       case 'text':

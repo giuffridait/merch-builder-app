@@ -11,7 +11,7 @@ export type ACPVariant = {
 };
 
 export type ACPAttributes = {
-  category: 'tee' | 'hoodie' | 'tote' | 'mug';
+  category: 'tee' | 'hoodie' | 'tote';
   materials: string[];
   lead_time_days: number;
   min_qty: number;
