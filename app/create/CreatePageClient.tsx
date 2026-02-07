@@ -142,8 +142,9 @@ export default function CreatePage() {
       icon: state.icon,
       productName: state.product?.name
     });
-    if (!state.text || !state.product) return;
-    const key = `${state.text}|${state.icon || 'default'}|${state.vibe || ''}|${state.occasion || ''}`;
+    if ((!state.text && !state.icon) || !state.product) return;
+    const text = state.text || '';
+    const key = `${text}|${state.icon || 'default'}|${state.vibe || ''}|${state.occasion || ''}`;
     if (lastGeneratedRef.current === key) {
       console.log('[DEBUG] Skipping design generation - already generated for this key:', key);
       return;
@@ -151,7 +152,7 @@ export default function CreatePage() {
 
     console.log('[DEBUG] Generating designs in useEffect');
     const icon = getIconById(state.icon) || ICON_LIBRARY.find(i => i.id === 'star') || ICON_LIBRARY[0];
-    const generated = generateVariants(state.text, icon, state.vibe, state.occasion);
+    const generated = generateVariants(text, icon, state.vibe, state.occasion);
     setDesigns(generated.variants);
     if (!selectedVariant || !generated.variants.find(v => v.id === selectedVariant)) {
       setSelectedVariant(generated.recommended);
