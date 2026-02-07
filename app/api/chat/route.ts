@@ -58,7 +58,10 @@ export async function POST(req: NextRequest) {
     const result = await getLLMResponse(userMessage, state, messages);
     return NextResponse.json(result);
   } catch (error: any) {
-    const fallback = fallbackResponse(userMessage, state);
+    const fallback = {
+      assistantMessage: "Tell me a bit more about what you'd like to make.",
+      updates: {}
+    };
     if (stream) {
       const encoder = new TextEncoder();
       const streamResponse = new ReadableStream({
