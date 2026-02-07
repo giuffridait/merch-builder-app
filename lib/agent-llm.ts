@@ -36,7 +36,13 @@ const STAGES: ConversationState['stage'][] = [
 
 function buildSystemPrompt(state: ConversationState) {
   const { messages: _messages, ...stateSummary } = state;
-  const products = PRODUCTS.map(p => ({ id: p.id, name: p.name, category: p.category }));
+  const products = PRODUCTS.map(p => ({
+    id: p.id,
+    name: p.name,
+    category: p.category,
+    colors: p.colors.map(c => c.name),
+    sizes: p.sizes
+  }));
   const icons = ICON_LIBRARY.map(i => ({ id: i.id, keywords: i.keywords }));
   const textColors = Object.keys(TEXT_COLOR_OPTIONS);
 
@@ -77,8 +83,9 @@ function buildSystemPrompt(state: ConversationState) {
     'If the user describes what they want on the product (e.g., "Team Spirit", "Be Yourself", etc.), extract and set updates.text.',
     'When at stage "text" or "intent", if the user provides a phrase/slogan, set it as updates.text and move to stage "icon".',
     'If the user mentions size (XS/S/M/L/XL/2XL) or quantity, set size/quantity.',
-    'If the user mentions a product and a color, set productId and productColor.',
-    'If a user requests a text color, set textColor (not productColor) unless they explicitly mention the product color.',
+    'If the user mentions a color, check if it exists on the chosen product. If it does, set productColor.',
+    'If the user mentions a product and a color (e.g., "navy tee"), set both productId and productColor.',
+    'If a user requests a text color (e.g., "red text"), set textColor (not productColor).',
     'If the user says "add to cart" or "checkout", set action to "add_to_cart".',
     'If the user says "remove the icon" or "remove the star/logo", set action to "remove_icon" and iconId to "none".',
     'If you cannot confidently extract a value, leave it out.',
