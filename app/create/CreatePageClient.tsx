@@ -135,10 +135,21 @@ export default function CreatePage() {
   }, [selectedColor]);
 
   useEffect(() => {
+    console.log('[DEBUG] Design generation useEffect', {
+      hasText: !!state.text,
+      hasProduct: !!state.product,
+      text: state.text,
+      icon: state.icon,
+      productName: state.product?.name
+    });
     if (!state.text || !state.product) return;
     const key = `${state.text}|${state.icon || 'default'}|${state.vibe || ''}|${state.occasion || ''}`;
-    if (lastGeneratedRef.current === key) return;
+    if (lastGeneratedRef.current === key) {
+      console.log('[DEBUG] Skipping design generation - already generated for this key:', key);
+      return;
+    }
 
+    console.log('[DEBUG] Generating designs in useEffect');
     const icon = getIconById(state.icon) || ICON_LIBRARY.find(i => i.id === 'star') || ICON_LIBRARY[0];
     const generated = generateVariants(state.text, icon, state.vibe, state.occasion);
     setDesigns(generated.variants);
@@ -229,6 +240,13 @@ export default function CreatePage() {
       let updatedState: ConversationState = state;
       setState(prev => {
         updatedState = { ...prev, ...updates };
+        console.log('[DEBUG] State updated:', {
+          stage: updatedState.stage,
+          text: updatedState.text,
+          icon: updatedState.icon,
+          product: updatedState.product?.name,
+          updates
+        });
         return updatedState;
       });
 
@@ -259,6 +277,12 @@ export default function CreatePage() {
       }
 
       if (shouldGenerateDesigns(updatedState) || (updatedState.stage === 'icon' && updatedState.text && updatedState.icon)) {
+        console.log('[DEBUG] Design generation triggered', {
+          shouldGenerate: shouldGenerateDesigns(updatedState),
+          stage: updatedState.stage,
+          hasText: !!updatedState.text,
+          hasIcon: !!updatedState.icon
+        });
         setIsTyping(false);
         addMessage('assistant', 'Perfect! Let me generate 3 design variants for you... ✨');
 
