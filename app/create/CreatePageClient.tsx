@@ -24,7 +24,7 @@ export default function CreatePage() {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [cart, setCart] = useState<any[]>([]);
-  
+
   const [state, setState] = useState<ConversationState>({
     stage: 'welcome',
     messages: [
@@ -254,19 +254,19 @@ export default function CreatePage() {
       if (shouldGenerateDesigns(newState) || (newState.stage === 'icon' && newState.text && newState.icon)) {
         setIsTyping(false);
         addMessage('assistant', 'Perfect! Let me generate 3 design variants for you... ✨');
-        
+
         await new Promise(resolve => setTimeout(resolve, 1500));
-        
+
         const generated = generateVariants(
           newState.text!,
           findIconByKeyword(newState.icon!),
           newState.vibe,
           newState.occasion
         );
-        
+
         setDesigns(generated.variants);
         setSelectedVariant(generated.recommended);
-        
+
         setState(prev => ({ ...prev, stage: 'preview' }));
         addMessage('assistant', `I've created 3 designs for you! Variant ${generated.recommended} is my top recommendation based on your preferences. You can pick any variant, adjust colors and size, then add to cart.`);
         setIsTyping(false);
@@ -275,9 +275,11 @@ export default function CreatePage() {
 
       setIsTyping(false);
       addMessage('assistant', (data as any)?.assistantMessage || "I'm here to help! What would you like to do?");
+      addMessage('assistant', (data as any)?.assistantMessage || "I'm here to help! What would you like to do?");
     } catch (err) {
+      console.error('LLM Error:', err);
       setIsTyping(false);
-      addMessage('assistant', 'The AI is taking too long to respond. Please try again in a moment.');
+      addMessage('assistant', 'The AI is unavailable (check API keys). Please try again later.');
     }
   };
 
@@ -309,7 +311,7 @@ export default function CreatePage() {
     const designSvg = variant?.svg || buildTextOnlySVG(state.text);
 
     const itemPrice = state.product.basePrice + PRINT_FEE;
-    
+
     const newCart = addToCart({
       productId: state.product.id,
       productName: state.product.name,
@@ -360,7 +362,7 @@ export default function CreatePage() {
             <div className="w-8 h-8 bg-gradient-to-br from-[#e4002b] to-[#ff6b6b] rounded-lg" />
             <span className="text-xl font-bold tracking-tight">MerchForge</span>
           </button>
-          
+
           <button
             onClick={() => router.push('/cart')}
             className="relative px-4 py-2 rounded-full bg-[#f7f7f7] hover:bg-[#efefef] transition-all flex items-center gap-2 border border-[#e4e4e4]"
@@ -389,11 +391,10 @@ export default function CreatePage() {
                     className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-fadeIn`}
                   >
                     <div
-                      className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm ${
-                        message.role === 'user'
+                      className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm ${message.role === 'user'
                           ? 'bg-gradient-to-r from-[#e4002b] to-[#ff6b6b] text-white'
                           : 'bg-[#f7f7f7] border border-[#e4e4e4]'
-                      }`}
+                        }`}
                     >
                       <p className="leading-relaxed">{message.content}</p>
                     </div>
@@ -471,7 +472,7 @@ export default function CreatePage() {
                   </div>
                 )}
               </div>
-              
+
               {state.product ? (
                 <div className="relative aspect-[4/5] bg-white rounded-2xl overflow-hidden border border-[#e4e4e4]">
                   <div className="absolute inset-0 bg-white" />
@@ -483,7 +484,7 @@ export default function CreatePage() {
                     alt={state.product.name}
                     className="absolute inset-0 w-full h-full object-contain p-12 bg-white"
                   />
-                  
+
                   {/* Design overlay */}
                   {designs && selectedVariant && (
                     <div
@@ -573,17 +574,16 @@ export default function CreatePage() {
                     <button
                       key={variant.id}
                       onClick={() => setSelectedVariant(variant.id)}
-                      className={`rounded-2xl border-2 p-3 text-left transition-all ${
-                        selectedVariant === variant.id
+                      className={`rounded-2xl border-2 p-3 text-left transition-all ${selectedVariant === variant.id
                           ? 'border-[#e4002b] bg-[#fff5f6]'
                           : 'border-[#e4e4e4] bg-white hover:border-[#cfcfcf]'
-                      }`}
+                        }`}
                     >
-                        <div className="h-28 rounded-xl bg-[#f7f7f7] border border-[#e4e4e4] flex items-center justify-center mb-3">
-                          <div
-                            className="w-20 h-20"
-                            style={{ color: getContrastColor(selectedColor?.hex || '#ffffff') }}
-                            dangerouslySetInnerHTML={{ __html: variant.svg }}
+                      <div className="h-28 rounded-xl bg-[#f7f7f7] border border-[#e4e4e4] flex items-center justify-center mb-3">
+                        <div
+                          className="w-20 h-20"
+                          style={{ color: getContrastColor(selectedColor?.hex || '#ffffff') }}
+                          dangerouslySetInnerHTML={{ __html: variant.svg }}
                         />
                       </div>
                       <div className="text-sm font-semibold">Variant {variant.id}</div>
@@ -611,9 +611,8 @@ export default function CreatePage() {
                         <button
                           key={color.name}
                           onClick={() => setSelectedColor(color)}
-                          className={`w-12 h-12 rounded-full border-2 transition-all ${
-                            selectedColor?.name === color.name ? 'border-[#e4002b]' : 'border-[#e4e4e4]'
-                          }`}
+                          className={`w-12 h-12 rounded-full border-2 transition-all ${selectedColor?.name === color.name ? 'border-[#e4002b]' : 'border-[#e4e4e4]'
+                            }`}
                           style={{ backgroundColor: color.hex }}
                           title={color.name}
                         />
@@ -633,9 +632,8 @@ export default function CreatePage() {
                               setTextColor(swatch);
                               setTextColorAuto(false);
                             }}
-                            className={`w-10 h-10 rounded-full border-2 transition-all ${
-                              textColor?.name === name ? 'border-[#e4002b]' : 'border-[#e4e4e4]'
-                            }`}
+                            className={`w-10 h-10 rounded-full border-2 transition-all ${textColor?.name === name ? 'border-[#e4002b]' : 'border-[#e4e4e4]'
+                              }`}
                             style={{ backgroundColor: swatch.hex }}
                             title={name}
                           />
@@ -651,9 +649,8 @@ export default function CreatePage() {
                         <button
                           key={icon.id}
                           onClick={() => setState(prev => ({ ...prev, icon: icon.id }))}
-                          className={`h-10 w-10 rounded-xl border transition-all flex items-center justify-center ${
-                            state.icon === icon.id ? 'border-[#e4002b] bg-[#fff5f6]' : 'border-[#e4e4e4] bg-white hover:border-[#cfcfcf]'
-                          }`}
+                          className={`h-10 w-10 rounded-xl border transition-all flex items-center justify-center ${state.icon === icon.id ? 'border-[#e4002b] bg-[#fff5f6]' : 'border-[#e4e4e4] bg-white hover:border-[#cfcfcf]'
+                            }`}
                           title={icon.id}
                         >
                           <svg viewBox="0 0 24 24" className="h-5 w-5 text-[#111111]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -726,11 +723,10 @@ export default function CreatePage() {
                           <button
                             key={size}
                             onClick={() => setSelectedSize(size)}
-                            className={`px-4 py-2 rounded-lg border-2 transition-all text-sm ${
-                              selectedSize === size
+                            className={`px-4 py-2 rounded-lg border-2 transition-all text-sm ${selectedSize === size
                                 ? 'bg-[#f7f7f7] border-[#e4002b]'
                                 : 'bg-white border-transparent hover:border-[#e4e4e4]'
-                            }`}
+                              }`}
                           >
                             {size}
                           </button>

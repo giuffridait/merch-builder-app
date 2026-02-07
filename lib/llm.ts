@@ -22,6 +22,7 @@ function getConfig(): LLMConfig {
     const model = process.env.QWEN_MODEL || 'qwen2.5-14b-instruct';
     const baseUrl = process.env.QWEN_API_BASE;
     const apiKey = process.env.QWEN_API_KEY;
+    if (!apiKey) throw new Error('QWEN_API_KEY is missing');
     return { provider: 'openai', model, baseUrl, apiKey };
   }
 
@@ -29,7 +30,14 @@ function getConfig(): LLMConfig {
     const model = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
     const baseUrl = process.env.GROQ_API_BASE || 'https://api.groq.com/openai/v1';
     const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) throw new Error('GROQ_API_KEY is missing');
     return { provider: 'groq', model, baseUrl, apiKey };
+  }
+
+  // Default to Ollama, but check for production environment
+  const isProd = process.env.NODE_ENV === 'production';
+  if (isProd && !process.env.OLLAMA_HOST) {
+    throw new Error('LLM_PROVIDER not set in production. Please set LLM_PROVIDER=groq (or openai) and provide API keys.');
   }
 
   const model = process.env.OLLAMA_MODEL || 'qwen2.5:14b';
