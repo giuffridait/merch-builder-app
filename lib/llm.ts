@@ -75,7 +75,10 @@ function messagesToPrompt(messages: ChatMessage[]) {
     .join('\n') + '\nASSISTANT:';
 }
 
-export async function chatCompletion(messages: ChatMessage[]): Promise<string> {
+export async function chatCompletion(
+  messages: ChatMessage[],
+  options?: { responseFormat?: 'json' }
+): Promise<string> {
   const config = getConfig();
   const maxRetries = parseInt(process.env.LLM_MAX_RETRIES || `${DEFAULT_MAX_RETRIES}`, 10);
   const retryDelay = parseInt(process.env.LLM_RETRY_DELAY_MS || `${DEFAULT_RETRY_DELAY_MS}`, 10);
@@ -134,7 +137,10 @@ export async function chatCompletion(messages: ChatMessage[]): Promise<string> {
         body: JSON.stringify({
           model: config.model,
           messages,
-          temperature: 0.4
+          temperature: 0.4,
+          ...(options?.responseFormat === 'json'
+            ? { response_format: { type: 'json_object' } }
+            : {})
         })
       }, timeoutMs);
 

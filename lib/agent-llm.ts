@@ -138,18 +138,15 @@ export async function getLLMResponse(
     { role: 'user', content: userMessage }
   ];
 
-  let raw = await chatCompletion(llmMessages);
-  console.log('[DEBUG] Raw LLM Response:', raw);
+  let raw = await chatCompletion(llmMessages, { responseFormat: 'json' });
   let parsed = extractJson(raw) as LLMResult | null;
-  console.log('[DEBUG] Parsed LLM Result:', JSON.stringify(parsed, null, 2));
 
   // Self-correction retry if JSON is invalid
   if (!parsed) {
-    console.log('Invalid JSON received, attempting self-correction...');
     llmMessages.push({ role: 'assistant', content: raw });
-    llmMessages.push({ role: 'system', content: 'You failed to provide valid JSON. Please correct your previous response and return ONLY a valid JSON object.' });
+    llmMessages.push({ role: 'system', content: 'Return ONLY valid JSON. Do not include any extra text.' });
 
-    raw = await chatCompletion(llmMessages);
+    raw = await chatCompletion(llmMessages, { responseFormat: 'json' });
     parsed = extractJson(raw) as LLMResult | null;
   }
 
