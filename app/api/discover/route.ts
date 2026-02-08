@@ -273,10 +273,13 @@ export async function POST(req: NextRequest) {
     const llmUpdates = validateCustomizationUpdates(llmUpdatesRaw);
     const parsedUpdates = validateCustomizationUpdates(parsedUpdatesRaw);
 
+    // Discover stage is handled separately (not part of CustomizationUpdates)
+    const llmStage = llmUpdatesRaw?.stage as DiscoverState['stage'] | undefined;
+
     // User-parsed constraints should take precedence over model guesses.
     const updates = { ...llmUpdates, ...parsedUpdates };
     const newConstraints = { ...state.constraints, ...updates };
-    const stage = updates.stage || (state.stage === 'welcome' ? 'constraints' : state.stage);
+    const stage = (llmStage && STAGES.includes(llmStage) ? llmStage : null) || (state.stage === 'welcome' ? 'constraints' : state.stage);
     let results = rankInventory(newConstraints);
     const rationale = llm?.selection?.rationale;
     let assistantMessageOverride: string | null = null;

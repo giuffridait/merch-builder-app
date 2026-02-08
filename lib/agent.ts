@@ -8,7 +8,6 @@ export interface Message {
 }
 
 export interface ConversationState {
-  stage: 'welcome' | 'product' | 'intent' | 'text' | 'icon' | 'generating' | 'preview' | 'complete';
   product?: Product;
   occasion?: string;
   vibe?: string;
@@ -19,12 +18,23 @@ export interface ConversationState {
   size?: string;
   quantity?: number;
   messages: Message[];
+  addedToCart?: boolean;
 }
 
-export function shouldGenerateDesigns(state: ConversationState): boolean {
-  return state.stage === 'icon' &&
-    !!state.product &&
-    (!!state.text || !!state.icon);
+export function canPreview(state: ConversationState): boolean {
+  return !!state.product && (!!state.text || !!state.icon);
+}
+
+export function canAddToCart(state: ConversationState): boolean {
+  return !!state.product && !!state.productColor && (!!state.text || !!state.icon);
+}
+
+export function getMissingFields(state: ConversationState): string[] {
+  const missing: string[] = [];
+  if (!state.product) missing.push('product');
+  if (!state.text && !state.icon) missing.push('text or icon');
+  if (!state.productColor) missing.push('color');
+  return missing;
 }
 
 export function suggestSlogans(occasion?: string, vibe?: string): string[] {
