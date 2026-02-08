@@ -3,6 +3,7 @@ import { Icon } from './icons';
 export interface DesignVariant {
   id: string;
   name: string;
+  layout: 'text_only' | 'text_icon' | 'icon_only';
   style: string;
   svg: string;
   score: number;
@@ -140,6 +141,7 @@ export function generateDefaultVariants(text: string, icon: Icon): GeneratedDesi
     {
       id: 'text-only',
       name: 'Text Only',
+      layout: 'text_only',
       style: 'Clean text lockup',
       svg: generateTextOnlySVG(safeText),
       score: 90,
@@ -148,6 +150,7 @@ export function generateDefaultVariants(text: string, icon: Icon): GeneratedDesi
     {
       id: 'text-icon',
       name: 'Text + Icon',
+      layout: 'text_icon',
       style: 'Balanced text and icon',
       svg: generateTextIconSVG(safeText, icon),
       score: 95,
@@ -156,6 +159,7 @@ export function generateDefaultVariants(text: string, icon: Icon): GeneratedDesi
     {
       id: 'icon-only',
       name: 'Icon Only',
+      layout: 'icon_only',
       style: 'Symbol-led mark',
       svg: generateIconOnlySVG(icon),
       score: 85,

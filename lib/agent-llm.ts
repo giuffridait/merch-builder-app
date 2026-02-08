@@ -15,6 +15,7 @@ type LLMResult = {
   updates?: Partial<ConversationState> & {
     productId?: string;
     iconId?: string;
+    layout?: 'text_only' | 'text_icon' | 'icon_only';
     productColor?: string;
     textColor?: string;
     size?: string;
@@ -52,7 +53,7 @@ function buildSystemPrompt(state: ConversationState) {
 
   return [
     'You are a merch design assistant. Return ONLY JSON.',
-    '{ "assistant": string, "updates": { "productId"?: string, "text"?: string, "iconId"?: string, "productColor"?: string, "size"?: string, "quantity"?: number, "action"?: "add_to_cart" | "remove_icon" } }',
+    '{ "assistant": string, "updates": { "productId"?: string, "text"?: string, "iconId"?: string, "layout"?: "text_only" | "text_icon" | "icon_only", "productColor"?: string, "size"?: string, "quantity"?: number, "action"?: "add_to_cart" | "remove_icon" } }',
     'Do NOT return a "product" object. Always use updates.productId and updates.productColor.',
     '',
     'Products: classic-tee (Colors: Black, White, Navy, Forest, Burgundy. Sizes: XS-2XL), hoodie (Colors: Black, Charcoal, Navy, Burgundy. Sizes: S-2XL), tote (Colors: Natural, Black).',
@@ -63,6 +64,7 @@ function buildSystemPrompt(state: ConversationState) {
     '- Progression: welcome -> product -> text/icon -> preview.',
     '- Set productId and productColor if mentioned (e.g., "navy tee").',
     '- Set text or iconId if mentioned.',
+    '- If the user requests a layout (text only / icon only / text + icon), set layout accordingly.',
     '- If user asks to remove the icon, set action: "remove_icon" and iconId: "none".',
     '- Set action: "add_to_cart" if user is ready.',
     '',
@@ -115,6 +117,8 @@ function normalizeUpdates(raw: LLMResult['updates'], product?: LLMResult['produc
     const icon = ICON_LIBRARY.find(i => i.id === validated.iconId);
     if (icon) updates.icon = icon.id;
   }
+
+  if (validated.layout) (updates as any).layout = validated.layout;
 
   if (validated.productColor) updates.productColor = validated.productColor;
   if (!validated.productColor && product?.color) updates.productColor = product.color.toLowerCase();

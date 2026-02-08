@@ -276,6 +276,16 @@ export default function CreatePage() {
         if (newProduct) updates.product = newProduct;
       }
 
+      if (updates.layout) {
+        const mapping: Record<string, string> = {
+          text_only: 'text-only',
+          text_icon: 'text-icon',
+          icon_only: 'icon-only'
+        };
+        const next = mapping[updates.layout];
+        if (next) setSelectedVariant(next);
+      }
+
       let updatedState = { ...state, ...updates };
       setState(prev => {
         updatedState = { ...prev, ...updates };

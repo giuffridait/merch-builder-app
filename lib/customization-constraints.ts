@@ -31,6 +31,7 @@ export type CustomizationUpdates = {
   vibe?: (typeof VIBES)[number];
   text?: string;
   iconId?: string;
+  layout?: 'text_only' | 'text_icon' | 'icon_only';
   productColor?: string;
   textColor?: string;
   color?: string; // Alias for productColor used in discovery
@@ -81,6 +82,10 @@ export function validateCustomizationUpdates(raw: any): CustomizationUpdates {
 
   if (typeof raw.iconId === 'string' && ICON_LIBRARY.find(i => i.id === raw.iconId)) {
     updates.iconId = raw.iconId;
+  }
+
+  if (typeof raw.layout === 'string' && ['text_only', 'text_icon', 'icon_only'].includes(raw.layout)) {
+    updates.layout = raw.layout as CustomizationUpdates['layout'];
   }
 
   const allowedColors = Object.keys(TEXT_COLOR_OPTIONS);
