@@ -22,6 +22,8 @@ Gaps for official ACP integration:
 - Multi-field updates in a single turn (e.g., product + color + text).
 - Self-correction retry when JSON parsing fails.
 - Two distinct flows exist: discovery (`/discover`) for constraint-based inventory ranking, and customization (`/create`) for guided configuration.
+- Customization responses are currently non-streaming (single response per turn).
+- Discovery can run deterministic constraint parsing before the LLM reply (optimistic preview), then reconciles with the LLM.
 
 Limitations:
 - No external tool use (no real-time inventory APIs).
