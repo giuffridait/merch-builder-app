@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ShoppingCart, Send, Sparkles, Loader2, Check } from 'lucide-react';
 import { PRODUCTS, PRINT_FEE, Product } from '@/lib/catalog';
 import { findIconByKeyword, ICON_LIBRARY } from '@/lib/icons';
-import { generateVariants, getContrastColor, DesignVariant } from '@/lib/design';
+import { generateDefaultVariants, getContrastColor, DesignVariant } from '@/lib/design';
 import { addToCart, getCart } from '@/lib/cart';
 
 import {
@@ -185,7 +185,7 @@ export default function CreatePage() {
 
     console.log('[DEBUG] Generating designs in useEffect');
     const icon = getIconById(state.icon) || ICON_LIBRARY.find(i => i.id === 'star') || ICON_LIBRARY[0];
-    const generated = generateVariants(text, icon, state.vibe, state.occasion);
+    const generated = generateDefaultVariants(text, icon);
     setDesigns(generated.variants);
     if (!selectedVariant || !generated.variants.find(v => v.id === selectedVariant)) {
       setSelectedVariant(generated.recommended);
@@ -221,6 +221,15 @@ export default function CreatePage() {
     return id;
   };
 
+  const updateMessageContent = (id: string, append: string) => {
+    setState(prev => ({
+      ...prev,
+      messages: prev.messages.map(m =>
+        m.id === id ? { ...m, content: m.content + append } : m
+      )
+    }));
+  };
+
   const handleSend = async () => {
     if (!input.trim() || isTyping) return;
 
@@ -238,24 +247,7 @@ export default function CreatePage() {
       return;
     }
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), requestTimeoutMs);
-
-    try {
-      const history = state.messages.map(m => ({ role: m.role, content: m.content }));
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userMessage, state, messages: history, stream: false }),
-        signal: controller.signal
-      });
-
-      if (!res.ok) throw new Error('Failed to connect to assistant');
-
-      const data = await res.json();
-      setFallbackNotice(!!data.fallbackUsed);
-      const updates = data.updates || {};
-
+    const applyUpdates = async (updates: any, assistantMessage?: string, shouldAddMessage = true) => {
       if (!updates.textColor) {
         const lower = userMessage.toLowerCase();
         if (lower.includes('text') || lower.includes('icon') || lower.includes('logo')) {
@@ -281,7 +273,9 @@ export default function CreatePage() {
         return updatedState;
       });
 
-      addMessage('assistant', data.assistantMessage || "I've updated the design for you.");
+      if (shouldAddMessage && assistantMessage) {
+        addMessage('assistant', assistantMessage);
+      }
 
       if (updates.action === 'add_to_cart') {
         handleAddToCart();
@@ -314,6 +308,79 @@ export default function CreatePage() {
         await new Promise(resolve => setTimeout(resolve, 1500));
         setState(prev => ({ ...prev, stage: 'preview' }));
       }
+    };
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), requestTimeoutMs);
+
+    try {
+      const history = state.messages.map(m => ({ role: m.role, content: m.content }));
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userMessage, state, messages: history, stream: true }),
+        signal: controller.signal
+      });
+
+      if (!res.ok) throw new Error('Failed to connect to assistant');
+
+      const isStream = res.headers.get('content-type')?.includes('text/event-stream');
+      if (!isStream || !res.body) {
+        const data = await res.json();
+        setFallbackNotice(!!data.fallbackUsed);
+        await applyUpdates(data.updates || {}, data.assistantMessage || "I've updated the design for you.");
+        setIsTyping(false);
+        return;
+      }
+
+      const assistantId = addMessage('assistant', '');
+      const decoder = new TextDecoder();
+      const reader = res.body.getReader();
+      let buffer = '';
+      let updates: any = {};
+      let assistantText = '';
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        let idx;
+        while ((idx = buffer.indexOf('\n\n')) >= 0) {
+          const chunk = buffer.slice(0, idx);
+          buffer = buffer.slice(idx + 2);
+
+          let event = 'message';
+          let data = '';
+          const lines = chunk.split('\n');
+          for (const line of lines) {
+            if (line.startsWith('event:')) event = line.replace('event:', '').trim();
+            if (line.startsWith('data:')) data += line.replace('data:', '').trim();
+          }
+
+          if (event === 'updates') {
+            try {
+              updates = JSON.parse(data);
+            } catch {
+              updates = {};
+            }
+          } else if (event === 'delta') {
+            let text = data;
+            try {
+              const delta = JSON.parse(data);
+              text = typeof delta === 'string' ? delta : '';
+            } catch {
+              text = data;
+            }
+            assistantText += text;
+            updateMessageContent(assistantId, text);
+          } else if (event === 'done') {
+            const payload = JSON.parse(data);
+            setFallbackNotice(!!payload.fallbackUsed);
+            await applyUpdates(updates || {}, assistantText, false);
+          }
+        }
+      }
 
       setIsTyping(false);
     } catch (err) {
@@ -341,17 +408,7 @@ export default function CreatePage() {
     </svg>
   `;
 
-  // Add hardcoded text-only variant
-  const textOnlyVariant: DesignVariant = {
-    id: 'text-only',
-    name: 'Text Only',
-    style: 'Modern & Clean',
-    svg: state.text ? buildTextOnlySVG(state.text) : '',
-    score: 80,
-    reasoning: 'Simple and effective.'
-  };
-
-  const allDesigns = designs ? [textOnlyVariant, ...designs] : null;
+  const allDesigns = designs || null;
 
   const handleAddToCart = () => {
     if (!state.product) return;
@@ -363,13 +420,10 @@ export default function CreatePage() {
     const fallbackVariantId = designs?.[0]?.id || 'text-only';
     const activeVariantId = selectedVariant || fallbackVariantId;
 
-    // Find in all designs (we need to account for text-only being injected)
-    const variant = (designs || []).find(v => v.id === activeVariantId) || (activeVariantId === 'text-only' ? textOnlyVariant : undefined);
+    const variant = (designs || []).find(v => v.id === activeVariantId);
     const designSvg = variant?.svg || buildTextOnlySVG(state.text);
 
     const itemPrice = state.product.basePrice + PRINT_FEE;
-
-    const isTextOnly = activeVariantId === 'text-only';
 
     const newCart = addToCart({
       productId: state.product.id,
@@ -381,7 +435,7 @@ export default function CreatePage() {
       variant: activeVariantId,
       designSVG: designSvg,
       text: state.text!,
-      icon: isTextOnly ? 'none' : (state.icon || 'none'),
+      icon: state.icon || 'none',
       price: itemPrice,
       total: itemPrice * quantity,
       currency: 'EUR',

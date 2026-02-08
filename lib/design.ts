@@ -14,6 +14,39 @@ export interface GeneratedDesigns {
   recommended: string;
 }
 
+function generateTextOnlySVG(text: string): string {
+  return `
+    <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+      <text x="200" y="210" font-family="'Helvetica Neue', sans-serif" font-size="56" font-weight="700" text-anchor="middle" fill="currentColor" letter-spacing="1">
+        ${text.toUpperCase()}
+      </text>
+    </svg>
+  `;
+}
+
+function generateIconOnlySVG(icon: Icon): string {
+  return `
+    <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+      <g transform="translate(200, 200)">
+        <path d="${icon.path}" fill="currentColor" transform="translate(-12, -12) scale(4)" />
+      </g>
+    </svg>
+  `;
+}
+
+function generateTextIconSVG(text: string, icon: Icon): string {
+  return `
+    <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+      <g transform="translate(200, 140)">
+        <path d="${icon.path}" fill="currentColor" transform="translate(-12, -12) scale(3.2)" />
+      </g>
+      <text x="200" y="285" font-family="'Helvetica Neue', sans-serif" font-size="52" font-weight="700" text-anchor="middle" fill="currentColor" letter-spacing="1">
+        ${text.toUpperCase()}
+      </text>
+    </svg>
+  `;
+}
+
 function generateMinimalSVG(text: string, icon: Icon): string {
   return `
     <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
@@ -99,6 +132,39 @@ export function generateVariants(
     variants,
     recommended: variants[0].id
   };
+}
+
+export function generateDefaultVariants(text: string, icon: Icon): GeneratedDesigns {
+  const safeText = text || '';
+  const variants: DesignVariant[] = [
+    {
+      id: 'text-only',
+      name: 'Text Only',
+      style: 'Clean text lockup',
+      svg: generateTextOnlySVG(safeText),
+      score: 90,
+      reasoning: 'Simple, clean typography-first layout.'
+    },
+    {
+      id: 'text-icon',
+      name: 'Text + Icon',
+      style: 'Balanced text and icon',
+      svg: generateTextIconSVG(safeText, icon),
+      score: 95,
+      reasoning: 'Balanced text/icon composition with strong hierarchy.'
+    },
+    {
+      id: 'icon-only',
+      name: 'Icon Only',
+      style: 'Symbol-led mark',
+      svg: generateIconOnlySVG(icon),
+      score: 85,
+      reasoning: 'Bold, minimal icon-only mark.'
+    }
+  ];
+
+  const recommended = safeText ? 'text-icon' : 'icon-only';
+  return { variants, recommended };
 }
 
 export function getContrastColor(bgHex: string): string {
