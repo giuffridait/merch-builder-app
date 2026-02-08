@@ -93,6 +93,14 @@ function generateRetroSVG(text: string, icon: Icon): string {
   `;
 }
 
+function pickTemplateIndex(seed: string, count: number) {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash = (hash * 31 + seed.charCodeAt(i)) % 100000;
+  }
+  return Math.abs(hash) % count;
+}
+
 export function generateVariants(
   text: string,
   icon: Icon,
@@ -140,6 +148,15 @@ export function generateVariants(
 
 export function generateDefaultVariants(text: string, icon: Icon): GeneratedDesigns {
   const safeText = text || '';
+  const seed = `${safeText}|${icon.id}`;
+  const templates = [
+    { name: 'Minimal', svg: generateMinimalSVG(safeText, icon) },
+    { name: 'Bold', svg: generateBoldSVG(safeText, icon) },
+    { name: 'Retro Badge', svg: generateRetroSVG(safeText, icon) }
+  ];
+  const templateIndex = pickTemplateIndex(seed, templates.length);
+  const aiTemplate = templates[templateIndex];
+
   const variants: DesignVariant[] = [
     {
       id: 'text-only',
@@ -158,6 +175,15 @@ export function generateDefaultVariants(text: string, icon: Icon): GeneratedDesi
       svg: generateTextIconSVG(safeText, icon),
       score: 95,
       reasoning: 'Balanced text/icon composition with strong hierarchy.'
+    },
+    {
+      id: 'ai-suggested',
+      name: 'AI Suggested',
+      layout: 'text_icon',
+      style: `Suggested ${aiTemplate.name} layout`,
+      svg: aiTemplate.svg,
+      score: 88,
+      reasoning: 'Auto-picked layout for a bold, standout look.'
     },
     {
       id: 'icon-only',
