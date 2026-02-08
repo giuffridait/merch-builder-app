@@ -256,7 +256,7 @@ export default function CreatePage() {
       return;
     }
 
-    const applyUpdates = async (updates: any, assistantMessage?: string, shouldAddMessage = true) => {
+  const applyUpdates = async (updates: any, assistantMessage?: string, shouldAddMessage = true) => {
       if (!updates.textColor) {
         const lower = userMessage.toLowerCase();
         if (lower.includes('text') || lower.includes('icon') || lower.includes('logo')) {
@@ -284,6 +284,21 @@ export default function CreatePage() {
         };
         const next = mapping[updates.layout];
         if (next) setSelectedVariant(next);
+      }
+
+      if (updates.alignment) {
+        const map: Record<string, number> = { left: -30, center: 0, right: 30 };
+        setDesignOffset(prev => ({ ...prev, x: map[updates.alignment] ?? prev.x }));
+      }
+
+      if (updates.vertical) {
+        const map: Record<string, number> = { top: -30, middle: 0, bottom: 30 };
+        setDesignOffset(prev => ({ ...prev, y: map[updates.vertical] ?? prev.y }));
+      }
+
+      if (updates.scale) {
+        const map: Record<string, number> = { small: 0.75, medium: 0.9, large: 1.0 };
+        setDesignScale(map[updates.scale] ?? designScale);
       }
 
       let updatedState = { ...state, ...updates };

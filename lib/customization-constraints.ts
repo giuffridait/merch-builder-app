@@ -34,6 +34,9 @@ export type CustomizationUpdates = {
   layout?: 'text_only' | 'text_icon' | 'icon_only';
   productColor?: string;
   textColor?: string;
+  alignment?: 'left' | 'center' | 'right';
+  vertical?: 'top' | 'middle' | 'bottom';
+  scale?: 'small' | 'medium' | 'large';
   color?: string; // Alias for productColor used in discovery
   size?: string;
   budgetMax?: number; // Used in discovery
@@ -86,6 +89,18 @@ export function validateCustomizationUpdates(raw: any): CustomizationUpdates {
 
   if (typeof raw.layout === 'string' && ['text_only', 'text_icon', 'icon_only'].includes(raw.layout)) {
     updates.layout = raw.layout as CustomizationUpdates['layout'];
+  }
+
+  if (typeof raw.alignment === 'string' && ['left', 'center', 'right'].includes(raw.alignment)) {
+    updates.alignment = raw.alignment as CustomizationUpdates['alignment'];
+  }
+
+  if (typeof raw.vertical === 'string' && ['top', 'middle', 'bottom'].includes(raw.vertical)) {
+    updates.vertical = raw.vertical as CustomizationUpdates['vertical'];
+  }
+
+  if (typeof raw.scale === 'string' && ['small', 'medium', 'large'].includes(raw.scale)) {
+    updates.scale = raw.scale as CustomizationUpdates['scale'];
   }
 
   const allowedColors = Object.keys(TEXT_COLOR_OPTIONS);
