@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
 
   if (color) {
     items = items.filter(item =>
-      item.attributes?.colors?.some((c: string) => c.toLowerCase() === color)
+      item.attributes?.variants?.colors?.some((c: { name: string }) => c.name.toLowerCase() === color)
     );
   }
 
