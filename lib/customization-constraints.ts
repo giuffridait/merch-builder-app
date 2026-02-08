@@ -33,7 +33,11 @@ export type CustomizationUpdates = {
   iconId?: string;
   productColor?: string;
   textColor?: string;
+  color?: string; // Alias for productColor used in discovery
   size?: string;
+  budgetMax?: number; // Used in discovery
+  leadTimeMax?: number; // Used in discovery
+  materials?: string[]; // Used in discovery
   quantity?: number;
   action?: 'add_to_cart' | 'remove_icon';
 };
@@ -51,14 +55,15 @@ export function validateCustomizationUpdates(raw: any): CustomizationUpdates {
     updates.stage = raw.stage as CustomizationUpdates['stage'];
   }
 
+  let validatedProduct: any = null;
   if (typeof raw.productId === 'string') {
     const search = raw.productId.toLowerCase();
-    const product = PRODUCTS.find(p =>
+    validatedProduct = PRODUCTS.find(p =>
       p.id.toLowerCase() === search ||
       p.name.toLowerCase() === search ||
       p.category.toLowerCase() === search
     );
-    if (product) updates.productId = product.id;
+    if (validatedProduct) updates.productId = validatedProduct.id;
   }
 
   if (typeof raw.occasion === 'string' && OCCASIONS.includes(raw.occasion as any)) {
@@ -78,16 +83,39 @@ export function validateCustomizationUpdates(raw: any): CustomizationUpdates {
     updates.iconId = raw.iconId;
   }
 
-  if (typeof raw.productColor === 'string') {
-    updates.productColor = raw.productColor.toLowerCase();
+  const allowedColors = Object.keys(TEXT_COLOR_OPTIONS);
+
+  const rawColor = raw.productColor || raw.color;
+  if (typeof rawColor === 'string') {
+    const color = rawColor.toLowerCase();
+    // Prevent literal placeholders like "string" or "color"
+    if (color !== 'string' && color !== 'color' && color !== 'productcolor') {
+      const isValid = validatedProduct
+        ? validatedProduct.colors.some((c: any) => c.name.toLowerCase() === color)
+        : allowedColors.includes(color);
+
+      if (isValid) {
+        updates.productColor = color;
+        updates.color = color;
+      }
+    }
   }
 
   if (typeof raw.textColor === 'string') {
-    updates.textColor = raw.textColor.toLowerCase();
+    const color = raw.textColor.toLowerCase();
+    if (color !== 'string' && color !== 'textcolor' && allowedColors.includes(color)) {
+      updates.textColor = color;
+    }
   }
 
   if (typeof raw.size === 'string') {
-    updates.size = raw.size.toUpperCase();
+    const size = raw.size.toUpperCase();
+    if (size !== 'STRING' && size !== 'SIZE') {
+      const isValid = validatedProduct
+        ? validatedProduct.sizes.includes(size)
+        : ['XS', 'S', 'M', 'L', 'XL', '2XL'].includes(size);
+      if (isValid) updates.size = size;
+    }
   }
 
   if (typeof raw.quantity === 'number') {
@@ -96,6 +124,17 @@ export function validateCustomizationUpdates(raw: any): CustomizationUpdates {
       Math.max(CUSTOMIZATION_LIMITS.minQuantity, Math.floor(raw.quantity))
     );
     updates.quantity = qty;
+  }
+
+  // Discovery fields
+  if (typeof raw.budgetMax === 'number' && raw.budgetMax > 0) {
+    updates.budgetMax = raw.budgetMax;
+  }
+  if (typeof raw.leadTimeMax === 'number' && raw.leadTimeMax > 0) {
+    updates.leadTimeMax = raw.leadTimeMax;
+  }
+  if (Array.isArray(raw.materials)) {
+    updates.materials = raw.materials.filter((m: any) => typeof m === 'string');
   }
 
   if (typeof raw.action === 'string' && (raw.action === 'add_to_cart' || raw.action === 'remove_icon')) {

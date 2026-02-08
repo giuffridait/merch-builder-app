@@ -10,6 +10,7 @@ import {
   rankInventory
 } from '@/lib/discover';
 import { getInventory } from '@/lib/inventory';
+import { validateCustomizationUpdates } from '@/lib/customization-constraints';
 
 type LLMResult = {
   assistant: string;
@@ -256,11 +257,16 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const parsedUpdates = parseConstraints(userMessage);
-    const candidateConstraints = { ...state.constraints, ...parsedUpdates };
+    const parsedUpdatesRaw = parseConstraints(userMessage);
+    const candidateConstraints = { ...state.constraints, ...parsedUpdatesRaw };
     const candidates = filterInventory(getInventory(), candidateConstraints);
     const llm = await getLLMResponse(userMessage, state, candidates);
-    const llmUpdates = llm?.updates || {};
+    const llmUpdatesRaw = llm?.updates || {};
+
+    // Use strict validation to sanitize both LLM and keyword extraction
+    const llmUpdates = validateCustomizationUpdates(llmUpdatesRaw);
+    const parsedUpdates = validateCustomizationUpdates(parsedUpdatesRaw);
+
     // User-parsed constraints should take precedence over model guesses.
     const updates = { ...llmUpdates, ...parsedUpdates };
     const newConstraints = { ...state.constraints, ...updates };

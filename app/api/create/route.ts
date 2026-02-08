@@ -3,7 +3,7 @@ import { chatCompletion } from '@/lib/llm';
 import { PRODUCTS, Product } from '@/lib/catalog';
 import { ICON_LIBRARY } from '@/lib/icons';
 import { ConversationState } from '@/lib/agent';
-import { CUSTOMIZATION_LIMITS, TEXT_COLOR_OPTIONS } from '@/lib/customization-constraints';
+import { CUSTOMIZATION_LIMITS, TEXT_COLOR_OPTIONS, validateCustomizationUpdates } from '@/lib/customization-constraints';
 
 type LLMResult = {
     assistant: string;
@@ -174,8 +174,12 @@ export async function POST(req: NextRequest) {
         console.log('[DEBUG] Create API - Parsed Result:', JSON.stringify(parsed, null, 2));
 
         // Fuzzy/Keyword fallback
-        const keywordUpdates = parseKeywordUpdates(userMessage);
-        const llmUpdates = parsed?.updates || {};
+        const keywordUpdatesRaw = parseKeywordUpdates(userMessage);
+        const llmUpdatesRaw = parsed?.updates || {};
+
+        // Use strict validation to sanitize both LLM and keyword extraction
+        const llmUpdates = validateCustomizationUpdates(llmUpdatesRaw);
+        const keywordUpdates = validateCustomizationUpdates(keywordUpdatesRaw);
 
         // Merge updates: keyword parsing takes precedence for specific fields to be more "deterministic"
         const updates = { ...llmUpdates, ...keywordUpdates };
