@@ -230,6 +230,15 @@ export default function CreatePage() {
     }));
   };
 
+  const setMessageContent = (id: string, content: string) => {
+    setState(prev => ({
+      ...prev,
+      messages: prev.messages.map(m =>
+        m.id === id ? { ...m, content } : m
+      )
+    }));
+  };
+
   const handleSend = async () => {
     if (!input.trim() || isTyping) return;
 
@@ -274,7 +283,13 @@ export default function CreatePage() {
       });
 
       if (shouldAddMessage && assistantMessage) {
-        addMessage('assistant', assistantMessage);
+        const trimmed = assistantMessage.trim();
+        const generic = /^design\b/i.test(trimmed) || trimmed.length < 8;
+        const followUp = updatedState.product
+          ? `Want to tweak the color, text, or add an icon?`
+          : `What would you like to make next?`;
+        const finalMessage = generic ? `${followUp}` : assistantMessage;
+        addMessage('assistant', finalMessage);
       }
 
       if (updates.action === 'add_to_cart') {
@@ -378,6 +393,14 @@ export default function CreatePage() {
             const payload = JSON.parse(data);
             setFallbackNotice(!!payload.fallbackUsed);
             await applyUpdates(updates || {}, assistantText, false);
+            const trimmed = assistantText.trim();
+            const generic = /^design\b/i.test(trimmed) || trimmed.length < 8;
+            if (generic) {
+              const followUp = state.product
+                ? `Want to tweak the color, text, or add an icon?`
+                : `What would you like to make next?`;
+              setMessageContent(assistantId, followUp);
+            }
           }
         }
       }
