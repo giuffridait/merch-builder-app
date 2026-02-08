@@ -256,6 +256,16 @@ export default function CreatePage() {
       setFallbackNotice(!!data.fallbackUsed);
       const updates = data.updates || {};
 
+      if (!updates.textColor) {
+        const lower = userMessage.toLowerCase();
+        if (lower.includes('text') || lower.includes('icon') || lower.includes('logo')) {
+          const requested = extractTextColor(userMessage);
+          if (requested) {
+            updates.textColor = requested.name.toLowerCase();
+          }
+        }
+      }
+
       if (updates.action === 'remove_icon') {
         updates.icon = 'none';
       }
