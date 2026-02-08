@@ -13,6 +13,17 @@ function unauthorized() {
 }
 
 export function middleware(req: NextRequest) {
+  const pathname = req.nextUrl.pathname;
+  const publicPaths = [
+    '/api/catalog/search',
+    '/api/offer',
+    '/api/commit',
+    '/api/order'
+  ];
+  if (publicPaths.some(path => pathname === path || pathname.startsWith(`${path}/`))) {
+    return NextResponse.next();
+  }
+
   if (!USER || !PASS) return NextResponse.next();
 
   const auth = req.headers.get('authorization');
@@ -33,6 +44,10 @@ export function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
+    '/api/catalog/search',
+    '/api/offer',
+    '/api/commit',
+    '/api/order/:path*',
     '/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)'
   ]
 };
