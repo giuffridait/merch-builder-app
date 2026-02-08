@@ -15,6 +15,8 @@ function unauthorized() {
 export function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
   const publicPaths = [
+    '/.well-known/ucp-capabilities.json',
+    '/.well-known/ucp-capabilities.jsonld',
     '/api/catalog/search',
     '/api/offer',
     '/api/commit',
