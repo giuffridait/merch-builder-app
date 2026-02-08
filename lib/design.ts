@@ -103,6 +103,7 @@ export function generateVariants(
     {
       id: 'A',
       name: 'Minimal',
+      layout: 'text_icon',
       style: 'Text-focused with subtle accent',
       svg: generateMinimalSVG(text, icon),
       score: vibe === 'minimal' ? 95 : 75,
@@ -111,6 +112,7 @@ export function generateVariants(
     {
       id: 'B',
       name: 'Bold',
+      layout: 'text_icon',
       style: 'Statement piece with large elements',
       svg: generateBoldSVG(text, icon),
       score: vibe === 'bold' || vibe === 'sporty' ? 95 : 70,
@@ -119,6 +121,7 @@ export function generateVariants(
     {
       id: 'C',
       name: 'Retro Badge',
+      layout: 'text_icon',
       style: 'Vintage-inspired composition',
       svg: generateRetroSVG(text, icon),
       score: vibe === 'retro' || vibe === 'cute' ? 95 : 80,
