@@ -84,8 +84,29 @@ export function parseConstraints(message: string): Partial<DiscoverConstraints> 
   const tagMatches = TAG_KEYWORDS.filter(t => text.includes(t));
   if (tagMatches.length > 0) updates.tags = tagMatches;
 
-  const colorMatch = COLOR_KEYWORDS.find(c => text.includes(c));
-  if (colorMatch) updates.color = colorMatch;
+  // Color keywords - using heuristic to pick the one most likely to be the product color
+  const colors = ['black', 'white', 'red', 'navy', 'forest', 'burgundy', 'charcoal', 'natural', 'pink', 'blue', 'green'];
+
+  colors.forEach(color => {
+    if (text.includes(color)) {
+      // If color is near product keywords
+      const productRegex = new RegExp(`${color}\\s*(?:tee|t-shirt|shirt|hoodie|tote|bag|cup|mug|top|garment|item)`, 'i');
+      const productRegexRev = new RegExp(`(?:tee|t-shirt|shirt|hoodie|tote|bag|cup|mug|top|garment|item)\\s*(?:in|of)?\\s*${color}`, 'i');
+
+      if (productRegex.test(text) || productRegexRev.test(text)) {
+        updates.color = color;
+      } else if (!updates.color) {
+        // Default color if no context provided but it's the first one we find
+        updates.color = color;
+      }
+    }
+  });
+
+  // Specific "in [color]" pattern for product
+  const productInColorMatch = text.match(/(?:tee|t-shirt|shirt|hoodie|tote|bag|cup|mug)\s+in\s+(\w+)/);
+  if (productInColorMatch && colors.includes(productInColorMatch[1])) {
+    updates.color = productInColorMatch[1];
+  }
 
   const sizeMatch = SIZE_KEYWORDS.find(s => new RegExp(`\\b${s}\\b`).test(text));
   if (sizeMatch) updates.size = sizeMatch.toUpperCase();
