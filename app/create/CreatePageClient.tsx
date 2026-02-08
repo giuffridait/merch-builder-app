@@ -146,6 +146,17 @@ export default function CreatePage() {
   }, [state.size, state.product]);
 
   useEffect(() => {
+    if (state.textColor) {
+      const colorKey = state.textColor.toLowerCase();
+      const match = COLOR_MAP[colorKey];
+      if (match) {
+        setTextColor(match);
+        setTextColorAuto(false);
+      }
+    }
+  }, [state.textColor]);
+
+  useEffect(() => {
     if (!selectedColor) return;
     if (!textColor || textColorAuto) {
       const auto = getContrastColor(selectedColor.hex);

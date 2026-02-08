@@ -41,15 +41,17 @@ function buildSystemPrompt(state: ConversationState) {
 
     return [
         'You are a friendly merch design assistant. Return ONLY JSON.',
-        '{ "assistant": string, "updates": { "productId"?: string, "text"?: string, "iconId"?: string, "productColor"?: string, "size"?: string, "quantity"?: number, "action"?: "add_to_cart" } }',
+        '{ "assistant": string, "updates": { "productId"?: string, "text"?: string, "iconId"?: string, "productColor"?: string, "textColor"?: string, "size"?: string, "quantity"?: number, "action"?: "add_to_cart" } }',
         '',
         'Products: classic-tee (Colors: Black, White, Navy, Forest, Burgundy. Sizes: XS-2XL), hoodie (Colors: Black, Charcoal, Navy, Burgundy. Sizes: S-2XL), tote (Colors: Natural, Black).',
         'Icons: star, heart, logo, arrow, wave, sun, mountain, etc.',
+        'Colors: black, white, red, navy, forest, burgundy, charcoal, natural, pink, blue, green.',
         '',
         'RULES:',
         '- Only support the products listed above. Reject others politely.',
         '- Progression: welcome -> product -> text/icon -> preview.',
-        '- Set productId and productColor if mentioned (e.g., "navy tee").',
+        '- Set productId and productColor for the garment (e.g., "navy tee").',
+        '- Set textColor for the design/icon color (e.g., "white star", "red text").',
         '- Set text or iconId if mentioned.',
         '- Set action: "add_to_cart" if user is ready.',
         '',
@@ -58,7 +60,8 @@ function buildSystemPrompt(state: ConversationState) {
             product: state.product?.id,
             text: state.text,
             icon: state.icon,
-            color: state.productColor,
+            productColor: state.productColor,
+            textColor: state.textColor,
             size: state.size
         })}`
     ].join('\n');
@@ -81,14 +84,47 @@ function parseKeywordUpdates(message: string): Partial<ConversationState> & { pr
     const updates: Partial<ConversationState> & { productId?: string; iconId?: string } = {};
 
     // Product keywords
-    if (text.includes('tee') || text.includes('shirt')) updates.productId = 'classic-tee';
+    if (text.includes('tee') || text.includes('shirt') || text.includes('t-shirt')) updates.productId = 'classic-tee';
     else if (text.includes('hoodie')) updates.productId = 'hoodie';
     else if (text.includes('tote') || text.includes('bag')) updates.productId = 'tote';
 
-    // Color keywords
-    const colors = ['black', 'white', 'navy', 'forest', 'burgundy', 'charcoal', 'natural'];
-    const foundColor = colors.find(c => text.includes(c));
-    if (foundColor) updates.productColor = foundColor;
+    const colors = ['black', 'white', 'red', 'navy', 'forest', 'burgundy', 'charcoal', 'natural', 'pink', 'blue', 'green'];
+
+    // Heuristic: find colors and see what they are near
+    colors.forEach(color => {
+        if (text.includes(color)) {
+            // If color is near product keywords
+            const productRegex = new RegExp(`${color}\\s*(?:tee|shirt|t-shirt|hoodie|tote|bag|top|garment|item)`, 'i');
+            const productRegexRev = new RegExp(`(?:tee|shirt|t-shirt|hoodie|tote|bag|top|garment|item)\\s*(?:in|of)?\\s*${color}`, 'i');
+
+            if (productRegex.test(text) || productRegexRev.test(text)) {
+                updates.productColor = color;
+            } else {
+                // If color is near design keywords
+                const designRegex = new RegExp(`${color}\\s*(?:text|icon|star|heart|logo|arrow|wave|sun|mountain|design|print)`, 'i');
+                const designRegexRev = new RegExp(`(?:text|icon|star|heart|logo|arrow|wave|sun|mountain|design|print)\\s*(?:in|of)?\\s*${color}`, 'i');
+
+                if (designRegex.test(text) || designRegexRev.test(text)) {
+                    updates.textColor = color;
+                } else if (!updates.productColor) {
+                    // Default to productColor if not specified and not already set
+                    updates.productColor = color;
+                }
+            }
+        }
+    });
+
+    // Special case for "the star in white, t-shirt in black"
+    // The above loop might get confused if multiple colors are present.
+    // Let's do a quick sweep for specific "in color" patterns
+    const inColorMatch = text.match(/(?:star|heart|logo|text|icon|print)\s+in\s+(\w+)/);
+    if (inColorMatch && colors.includes(inColorMatch[1])) {
+        updates.textColor = inColorMatch[1];
+    }
+    const productInColorMatch = text.match(/(?:tee|shirt|t-shirt|hoodie|tote|bag)\s+in\s+(\w+)/);
+    if (productInColorMatch && colors.includes(productInColorMatch[1])) {
+        updates.productColor = productInColorMatch[1];
+    }
 
     // Size keywords
     const sizes = ['xs', 's', 'm', 'l', 'xl', '2xl'];
@@ -98,6 +134,11 @@ function parseKeywordUpdates(message: string): Partial<ConversationState> & { pr
     // Quantity
     const qtyMatch = text.match(/(\d+)\s*(?:items|pcs|pieces|shirts|hoodies|totes)/);
     if (qtyMatch?.[1]) updates.quantity = parseInt(qtyMatch[1], 10);
+
+    // Icon keywords
+    const iconIds = ['star', 'heart', 'logo', 'arrow', 'wave', 'sun', 'mountain'];
+    const foundIcon = iconIds.find(id => text.includes(id));
+    if (foundIcon) updates.iconId = foundIcon;
 
     // Intent for text (quoted string)
     const quoteMatch = message.match(/"([^"]+)"/) || message.match(/'([^']+)'/);
