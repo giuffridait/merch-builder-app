@@ -41,7 +41,10 @@ function buildSystemPrompt(state: ConversationState) {
 
     return [
         'You are a friendly merch design assistant. Return ONLY JSON.',
-        '{ "assistant": string, "updates": { "productId"?: string, "text"?: string, "iconId"?: string, "productColor"?: string, "textColor"?: string, "size"?: string, "quantity"?: number, "action"?: "add_to_cart" } }',
+        'Example response:',
+        '{ "assistant": "I have updated your classic-tee to black.", "updates": { "productId": "classic-tee", "productColor": "black" } }',
+        '',
+        'NEVER use placeholders like "string", "number", or types in your JSON values. Always provide actual values from the catalog.',
         '',
         'Products: classic-tee (Colors: Black, White, Navy, Forest, Burgundy. Sizes: XS-2XL), hoodie (Colors: Black, Charcoal, Navy, Burgundy. Sizes: S-2XL), tote (Colors: Natural, Black).',
         'Icons: star, heart, logo, arrow, wave, sun, mountain, etc.',
@@ -68,15 +71,30 @@ function buildSystemPrompt(state: ConversationState) {
 }
 
 function extractJson(text: string): any | null {
+    // Try to find JSON block
     const fenced = text.match(/```json\s*([\s\S]*?)```/i);
-    if (fenced?.[1]) {
-        try { return JSON.parse(fenced[1]); } catch { return null; }
+    let potentialJson = fenced?.[1] || text;
+
+    // If no fenced block, try to find the first '{' and last '}'
+    if (!fenced) {
+        const start = text.indexOf('{');
+        const end = text.lastIndexOf('}');
+        if (start !== -1 && end !== -1) {
+            potentialJson = text.substring(start, end + 1);
+        }
     }
-    const raw = text.match(/({[\s\S]*})/);
-    if (raw?.[1]) {
-        try { return JSON.parse(raw[1]); } catch { return null; }
+
+    try {
+        return JSON.parse(potentialJson);
+    } catch {
+        // Last ditch effort: try to fix missing quotes on property names (common for LLMs)
+        try {
+            const fixed = potentialJson.replace(/([{,]\s*)([a-zA-Z0-9_]+)(\s*:)/g, '$1"$2"$3');
+            return JSON.parse(fixed);
+        } catch {
+            return null;
+        }
     }
-    return null;
 }
 
 function parseKeywordUpdates(message: string): Partial<ConversationState> & { productId?: string; iconId?: string } {
@@ -223,7 +241,7 @@ export async function POST(req: NextRequest) {
         console.error('Create API Error:', error);
         const keywordUpdates = parseKeywordUpdates(userMessage);
         return NextResponse.json({
-            assistantMessage: "I'm having a bit of trouble connecting to my full brain, but I've noted your request!",
+            assistantMessage: "I'm sorry, I'm having a bit of trouble processing that right now. I've updated your design based on your request, though!",
             updates: keywordUpdates,
             fallbackUsed: true
         });

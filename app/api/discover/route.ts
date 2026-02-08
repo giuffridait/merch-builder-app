@@ -43,8 +43,9 @@ function buildSystemPrompt(state: DiscoverState, candidates: ReturnType<typeof g
     'Always provide recommendations when you have enough constraints and candidates.',
     'Only ask a clarifying question if there are zero viable candidates or a critical constraint is missing.',
     'Avoid robotic confirmation-only replies.',
-    'Return ONLY a JSON object with this shape:',
-    '{ "assistant": string, "updates": { "stage"?: string, "category"?: string, "budgetMax"?: number, "materials"?: string[], "sustainable"?: boolean, "quantity"?: number, "eventDate"?: string, "tags"?: string[], "occasion"?: string, "color"?: string, "leadTimeMax"?: number, "size"?: string }, "selection": { "primaryIds"?: string[], "fallbackIds"?: string[], "rationale"?: string } }',
+    'Example response:',
+    '{ "assistant": "Here are 2 options for black tees.", "updates": { "color": "black", "category": "tee" }, "selection": { "primaryIds": ["tee-01"], "rationale": "Matches your black color request." } }',
+    'NEVER use placeholders like "string", "number", or types in your JSON values. Always provide actual values.',
     'Do not include markdown or code fences.',
     'Only use categories: tee, hoodie, tote, mug.',
     'Only use colors: white, black, navy, forest, burgundy, natural, charcoal, red, pink, blue, green.',
@@ -59,25 +60,30 @@ function buildSystemPrompt(state: DiscoverState, candidates: ReturnType<typeof g
 }
 
 function extractJson(text: string): any | null {
+  // Try to find JSON block
   const fenced = text.match(/```json\s*([\s\S]*?)```/i);
-  if (fenced?.[1]) {
+  let potentialJson = fenced?.[1] || text;
+
+  // If no fenced block, try to find the first '{' and last '}'
+  if (!fenced) {
+    const start = text.indexOf('{');
+    const end = text.lastIndexOf('}');
+    if (start !== -1 && end !== -1) {
+      potentialJson = text.substring(start, end + 1);
+    }
+  }
+
+  try {
+    return JSON.parse(potentialJson);
+  } catch {
+    // Last ditch effort: try to fix missing quotes on property names (common for LLMs)
     try {
-      return JSON.parse(fenced[1]);
+      const fixed = potentialJson.replace(/([{,]\s*)([a-zA-Z0-9_]+)(\s*:)/g, '$1"$2"$3');
+      return JSON.parse(fixed);
     } catch {
       return null;
     }
   }
-
-  const raw = text.match(/({[\s\S]*})/);
-  if (raw?.[1]) {
-    try {
-      return JSON.parse(raw[1]);
-    } catch {
-      return null;
-    }
-  }
-
-  return null;
 }
 
 function normalizeUpdates(raw: LLMResult['updates']): Partial<DiscoverConstraints> & { stage?: DiscoverState['stage'] } {
