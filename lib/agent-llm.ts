@@ -21,6 +21,10 @@ type LLMResult = {
     quantity?: number;
     action?: 'add_to_cart' | 'remove_icon';
   };
+  product?: {
+    id?: string;
+    color?: string;
+  };
 };
 
 const STAGES: ConversationState['stage'][] = [
@@ -48,7 +52,8 @@ function buildSystemPrompt(state: ConversationState) {
 
   return [
     'You are a merch design assistant. Return ONLY JSON.',
-    '{ "assistant": string, "updates": { "productId"?: string, "text"?: string, "iconId"?: string, "productColor"?: string, "size"?: string, "quantity"?: number, "action"?: "add_to_cart" } }',
+    '{ "assistant": string, "updates": { "productId"?: string, "text"?: string, "iconId"?: string, "productColor"?: string, "size"?: string, "quantity"?: number, "action"?: "add_to_cart" | "remove_icon" } }',
+    'Do NOT return a "product" object. Always use updates.productId and updates.productColor.',
     '',
     'Products: classic-tee (Colors: Black, White, Navy, Forest, Burgundy. Sizes: XS-2XL), hoodie (Colors: Black, Charcoal, Navy, Burgundy. Sizes: S-2XL), tote (Colors: Natural, Black).',
     'Icons: star, heart, logo, arrow, wave, sun, mountain, etc.',
@@ -58,6 +63,7 @@ function buildSystemPrompt(state: ConversationState) {
     '- Progression: welcome -> product -> text/icon -> preview.',
     '- Set productId and productColor if mentioned (e.g., "navy tee").',
     '- Set text or iconId if mentioned.',
+    '- If user asks to remove the icon, set action: "remove_icon" and iconId: "none".',
     '- Set action: "add_to_cart" if user is ready.',
     '',
     `Current state: ${JSON.stringify(stateSummary)}`
@@ -86,19 +92,20 @@ function extractJson(text: string): any | null {
   return null;
 }
 
-function normalizeUpdates(raw: LLMResult['updates']): Partial<ConversationState> {
+function normalizeUpdates(raw: LLMResult['updates'], product?: LLMResult['product']): Partial<ConversationState> {
   const updates: Partial<ConversationState> = {};
-  if (!raw) return updates;
+  if (!raw && !product) return updates;
 
-  const validated = validateCustomizationUpdates(raw);
+  const validated = validateCustomizationUpdates(raw || {});
 
   if (validated.stage && STAGES.includes(validated.stage)) {
     updates.stage = validated.stage;
   }
 
-  if (validated.productId) {
-    const product = PRODUCTS.find(p => p.id === validated.productId);
-    if (product) updates.product = product;
+  const resolvedProductId = validated.productId || product?.id;
+  if (resolvedProductId) {
+    const match = PRODUCTS.find(p => p.id === resolvedProductId);
+    if (match) updates.product = match;
   }
 
   if (validated.occasion) updates.occasion = validated.occasion;
@@ -110,6 +117,7 @@ function normalizeUpdates(raw: LLMResult['updates']): Partial<ConversationState>
   }
 
   if (validated.productColor) updates.productColor = validated.productColor;
+  if (!validated.productColor && product?.color) updates.productColor = product.color.toLowerCase();
   if (validated.textColor) updates.textColor = validated.textColor;
   if (validated.size) updates.size = validated.size;
   if (validated.quantity != null) updates.quantity = validated.quantity;
@@ -122,7 +130,7 @@ function validateLLMResult(parsed: LLMResult | null): { assistantMessage: string
   if (!parsed || typeof parsed.assistant !== 'string') return null;
   const assistant = parsed.assistant.trim();
   if (!assistant) return null;
-  const updates = normalizeUpdates(parsed.updates);
+  const updates = normalizeUpdates(parsed.updates, parsed.product);
   return { assistantMessage: assistant, updates };
 }
 
