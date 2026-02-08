@@ -60,34 +60,32 @@ export default function PreparednessPage() {
           </div>
 
           <div className="mt-8 border border-[#e4e4e4] rounded-xl p-6 bg-[#f7f7f7]">
-            <h3 className="text-sm font-semibold text-[#6b6b6b] mb-3">Agentic Workflow & Prompts</h3>
+            <h3 className="text-sm font-semibold text-[#6b6b6b] mb-3">Agentic Workflow & Guardrails</h3>
             <div className="grid md:grid-cols-2 gap-6">
               <div className="text-sm text-[#6b6b6b] space-y-3">
-                <h4 className="font-medium text-[#111111]">State Machine (React + Streaming API)</h4>
-                <p>The conversation is managed by a state machine with the following stages:</p>
+                <h4 className="font-medium text-[#111111]">Flexible Stage Progression</h4>
+                <p>The conversation follows a staged flow, but can skip or rewind if the user provides complete info.</p>
                 <div className="flex flex-wrap gap-2 text-xs">
                   {['welcome', 'product', 'intent', 'text', 'icon', 'preview'].map(stage => (
                     <span key={stage} className="px-2 py-1 bg-white border border-[#e4e4e4] rounded-md">{stage}</span>
                   ))}
                 </div>
-                <p>
-                  User input is sent to a streaming endpoint (<code>/api/create</code>), which provides Server-Sent Events (SSE) for a real-time, per-chunk chat experience.
-                </p>
-                <p>
-                  The API returns JSON updates for the state (e.g., changing colors) and a text delta for the message content.
-                </p>
+                <p>Updates can set multiple fields in one turn (e.g., product + color + text).</p>
+                <p>JSON parsing includes self-correction retries when the model drifts.</p>
               </div>
 
               <div className="text-sm text-[#6b6b6b] space-y-3">
-                <h4 className="font-medium text-[#111111]">System Prompt Highlights</h4>
+                <h4 className="font-medium text-[#111111]">Two Distinct Flows</h4>
                 <ul className="list-disc pl-4 space-y-1">
-                  <li><strong>Persona:</strong> "Friendly, confident merch design assistant."</li>
-                  <li><strong>Output:</strong> Strict JSON format for state updates.</li>
-                  <li><strong>Constraints:</strong> Enforces valid colors, vibes, occasions, and text length.</li>
-                  <li><strong>Logic:</strong> Decides the next stage based on missing information.</li>
-                  <li><strong>Fuzzy Parsing:</strong> Robust keyword-based extraction of product, color, and size.</li>
-                  <li><strong>Fallback:</strong> Automatically switches to deterministic keyword matching if the LLM is unavailable.</li>
+                  <li><strong>Discovery:</strong> `/discover` ranks inventory under strict constraints.</li>
+                  <li><strong>Customization:</strong> `/create` builds a cart-ready configuration.</li>
                 </ul>
+                <div className="mt-3 text-xs text-[#6b6b6b] space-y-1">
+                  <div>No external tool use (no real-time inventory APIs).</div>
+                  <div>Single-turn reasoning per LLM call.</div>
+                  <div>Bounded decision space (products, colors, icons).</div>
+                  <div>Scripted goal: cart-ready merch output.</div>
+                </div>
               </div>
             </div>
           </div>

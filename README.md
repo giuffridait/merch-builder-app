@@ -11,9 +11,9 @@ MerchForge is a Next.js app that pairs a conversational assistant with a product
 - Cart-ready selection
 
 ### Customization Flow
-- Guided design conversation with **Streaming Interaction** (Server-Sent Events)
-- **Fuzzy Keyword Parsing** for robust product, color, and size extraction
-- Fully agentic updates (product, text, colors, size, quantity)
+- Guided design conversation powered by LLM JSON outputs (non-streaming)
+- Self-correcting JSON parsing for robust state updates
+- Fully agentic updates (product, text, colors, size, quantity, icon)
 - Text-only or icon-based designs (icon optional)
 - 3 SVG design variants with a recommended pick
 - Live preview with color-specific product images
@@ -23,7 +23,7 @@ MerchForge is a Next.js app that pairs a conversational assistant with a product
 ### Commerce Preparedness
 - ACP/UCP readiness documentation
 - Inventory schema + capability flags
-- **Agentic Workflow Documentation**: Detailed explanation of state machine and prompts (`/preparedness`)
+- **Agentic Workflow Documentation**: Detailed explanation of flows, guardrails, and limitations (`/preparedness`)
 
 ## Getting Started
 
@@ -156,6 +156,18 @@ User: "I want a tote for my running team"
 AI: "What message should it say?"
 ```
 
+### Agentic Flow With Guardrails (Customization)
+- Flexible stage progression (welcome → product → intent → text → icon → preview), but can skip or rewind.
+- Multi-field updates in a single turn (e.g., product + color + text).
+- Self-correction retry when JSON parsing fails.
+- Two distinct flows exist: discovery (`/discover`) for constraint-based inventory ranking, and customization (`/create`) for guided configuration.
+
+Limitations:
+- No external tool use (no real-time inventory APIs).
+- Single-turn reasoning per LLM call (self-correction is a minimal recovery step).
+- Bounded decision space (products, colors, icons, sizes defined in catalog).
+- Scripted goal (cart-ready merch is the defined outcome).
+
 ## Customization
 
 ### Add or Update Inventory
@@ -169,8 +181,8 @@ Edit `lib/icons.ts` and add keyword mappings.
 
 ### Adjust AI Responses
 - Discovery: `app/api/discover/route.ts`
-- Customization: `app/api/create/route.ts` (Streaming API) or `lib/agent-llm.ts`
-- Legacy: `app/actions.ts` (Server Action) or `app/api/chat/route.ts` (Non-streaming)
+- Customization: `app/api/chat/route.ts` (non-streaming) + `lib/agent-llm.ts`
+- Legacy/experimental: `app/api/create/route.ts`, `app/actions.ts`
 
 ### Add New Design Variants
 Edit `lib/design.ts` to add a new SVG generator.
