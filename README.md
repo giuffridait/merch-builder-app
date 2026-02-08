@@ -11,7 +11,8 @@ MerchForge is a Next.js app that pairs a conversational assistant with a product
 - Cart-ready selection
 
 ### Customization Flow
-- Guided design conversation
+- Guided design conversation with **Streaming Interaction** (Server-Sent Events)
+- **Fuzzy Keyword Parsing** for robust product, color, and size extraction
 - Fully agentic updates (product, text, colors, size, quantity)
 - Text-only or icon-based designs (icon optional)
 - 3 SVG design variants with a recommended pick
@@ -103,9 +104,10 @@ merch-builder-app/
 │   ├── preparedness/
 │   │   └── page.jsx          # ACP/UCP readiness
 │   ├── api/
-│   │   ├── chat/route.ts     # Customization assistant (API)
+│   │   ├── chat/route.ts     # Legacy customization assistant (API)
+│   │   ├── create/route.ts   # New streaming customization assistant (API)
 │   │   └── discover/route.ts # Inventory assistant
-│   ├── actions.ts            # Server Actions (Agentic Chat)
+│   ├── actions.ts            # Legacy Server Actions (Agentic Chat)
 │   ├── layout.tsx            # Root layout
 │   ├── page.tsx              # Home
 │   └── globals.css           # Global styles
@@ -167,7 +169,8 @@ Edit `lib/icons.ts` and add keyword mappings.
 
 ### Adjust AI Responses
 - Discovery: `app/api/discover/route.ts`
-- Customization: `app/actions.ts` (Server Action) or `app/api/chat/route.ts` (API) + `lib/agent-llm.ts`
+- Customization: `app/api/create/route.ts` (Streaming API) or `lib/agent-llm.ts`
+- Legacy: `app/actions.ts` (Server Action) or `app/api/chat/route.ts` (Non-streaming)
 
 ### Add New Design Variants
 Edit `lib/design.ts` to add a new SVG generator.

@@ -7,7 +7,7 @@ import { PRODUCTS, PRINT_FEE, Product } from '@/lib/catalog';
 import { findIconByKeyword, ICON_LIBRARY } from '@/lib/icons';
 import { generateVariants, getContrastColor, DesignVariant } from '@/lib/design';
 import { addToCart, getCart } from '@/lib/cart';
-import { chatWithAgent } from '@/app/actions';
+
 import {
   Message,
   ConversationState,
@@ -48,7 +48,7 @@ export default function CreatePage() {
   const [designOffset, setDesignOffset] = useState({ x: 0, y: 0 });
   const lastGeneratedRef = useRef<string>('');
   const [fallbackNotice, setFallbackNotice] = useState(false);
-  const requestTimeoutMs = 12000;
+  const requestTimeoutMs = 30000;
 
   const COLOR_MAP: Record<string, { name: string; hex: string }> = {
     white: { name: 'White', hex: '#ffffff' },
@@ -116,12 +116,34 @@ export default function CreatePage() {
 
   useEffect(() => {
     if (state.product) {
-      setSelectedColor(state.product.colors[0]);
-      if (state.product.sizes) {
-        setSelectedSize(state.product.sizes[2]); // Default to M
+      // Sync selected color if current one is invalid or not set
+      const currentIsValid = selectedColor && state.product.colors.some(c => c.hex === selectedColor.hex);
+      if (!currentIsValid) {
+        setSelectedColor(state.product.colors[0]);
+      }
+
+      // Sync selected size if current one is invalid or not set
+      const currentSizeIsValid = selectedSize && state.product.sizes?.includes(selectedSize);
+      if (!currentSizeIsValid) {
+        setSelectedSize(state.product.sizes ? (state.product.sizes[2] || state.product.sizes[0]) : null);
       }
     }
   }, [state.product]);
+
+  useEffect(() => {
+    if (state.productColor && state.product) {
+      const match = state.product.colors.find(
+        c => c.name.toLowerCase() === state.productColor?.toLowerCase()
+      );
+      if (match) setSelectedColor(match);
+    }
+  }, [state.productColor, state.product]);
+
+  useEffect(() => {
+    if (state.size && state.product?.sizes?.includes(state.size)) {
+      setSelectedSize(state.size);
+    }
+  }, [state.size, state.product]);
 
   useEffect(() => {
     if (!selectedColor) return;
@@ -173,8 +195,9 @@ export default function CreatePage() {
   }, [searchParams]);
 
   const addMessage = (role: 'user' | 'assistant', content: string) => {
+    const id = Date.now().toString();
     const message: Message = {
-      id: Date.now().toString(),
+      id,
       role,
       content,
       timestamp: Date.now()
@@ -184,135 +207,149 @@ export default function CreatePage() {
       ...prev,
       messages: [...prev.messages, message]
     }));
+    return id;
+  };
+
+  const updateMessageContent = (id: string, append: string) => {
+    setState(prev => ({
+      ...prev,
+      messages: prev.messages.map(m =>
+        m.id === id ? { ...m, content: m.content + append } : m
+      )
+    }));
   };
 
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || isTyping) return;
 
     const userMessage = input.trim();
     setInput('');
     addMessage('user', userMessage);
-
     setIsTyping(true);
+    setFallbackNotice(false);
 
+    // Initial check for buy intent - can be handled locally for speed
     const isAddToCartIntent = /add to cart|checkout|ready to buy|buy now/i.test(userMessage);
-    if (isAddToCartIntent) {
-      setIsTyping(false);
-      if (!state.product || (!state.text && !state.icon) || !selectedColor) {
-        const missing: string[] = [];
-        if (!state.product) missing.push('product');
-        if (!state.text && !state.icon) missing.push('text or icon');
-        if (!selectedColor) missing.push('product color');
-        addMessage('assistant', `To add to cart, I still need: ${missing.join(', ')}.`);
-        return;
-      }
+    if (isAddToCartIntent && state.product && (state.text || state.icon) && selectedColor) {
       handleAddToCart();
+      setIsTyping(false);
       return;
     }
 
-    // Agentic v2: all updates are driven by the LLM (server action, no streaming).
-    const timeout = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('timeout')), requestTimeoutMs)
-    );
-
     try {
-      const history = [
-        ...state.messages.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
-        { role: 'user' as const, content: userMessage }
-      ];
-      const data = await Promise.race([
-        chatWithAgent(history, state, userMessage),
-        timeout
-      ]);
-
-      setFallbackNotice(false);
-      const updates = (data as any)?.updates || {};
-
-      if (updates.action === 'remove_icon') {
-        updates.icon = 'none';
-      }
-
-      if (state.stage === 'icon' && !updates.icon && updates.action !== 'remove_icon') {
-        const icon = findIconByKeyword(userMessage);
-        updates.icon = icon.id;
-      }
-
-      // Capture the complete updated state by using functional update and tracking the result
-      let updatedState: ConversationState = state;
-      setState(prev => {
-        updatedState = { ...prev, ...updates };
-        console.log('[DEBUG] State updated:', {
-          stage: updatedState.stage,
-          text: updatedState.text,
-          icon: updatedState.icon,
-          product: updatedState.product?.name,
-          updates
-        });
-        return updatedState;
+      const res = await fetch('/api/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userMessage, state, stream: true })
       });
 
-      if (updates.action === 'add_to_cart') {
-        handleAddToCart();
+      if (!res.ok) throw new Error('Failed to connect to assistant');
+
+      const isStream = res.headers.get('content-type')?.includes('text/event-stream');
+
+      if (!isStream || !res.body) {
+        const data = await res.json();
+        setFallbackNotice(!!data.fallbackUsed);
+        const updates = data.updates || {};
+
+        if (updates.productId) {
+          const newProduct = PRODUCTS.find(p => p.id === updates.productId);
+          if (newProduct) updates.product = newProduct;
+        }
+
+        let updatedState = { ...state, ...updates };
+        setState(prev => {
+          updatedState = { ...prev, ...updates };
+          return updatedState;
+        });
+
+        addMessage('assistant', data.assistantMessage || "I've updated the design for you.");
+
+        // Check for design generation trigger
+        if (shouldGenerateDesigns(updatedState)) {
+          addMessage('assistant', 'Perfect! Let me generate 3 design variants for you... ✨');
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          setState(prev => ({ ...prev, stage: 'preview' }));
+        }
+
         setIsTyping(false);
         return;
       }
 
-      if (updates.productColor && updatedState.product) {
-        const match = updatedState.product.colors.find(
-          (c: { name: string; hex: string }) => c.name.toLowerCase() === updates.productColor?.toLowerCase()
-        );
-        if (match) setSelectedColor(match);
-      }
-      if (updates.textColor) {
-        const map = COLOR_MAP[updates.textColor.toLowerCase()];
-        if (map) {
-          setTextColor(map);
-          setTextColorAuto(false);
+      const assistantId = addMessage('assistant', '');
+      const decoder = new TextDecoder();
+      const reader = res.body.getReader();
+      let buffer = '';
+      let updates: any = {};
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        let idx;
+        while ((idx = buffer.indexOf('\n\n')) >= 0) {
+          const chunk = buffer.slice(0, idx);
+          buffer = buffer.slice(idx + 2);
+
+          let event = 'message';
+          let data = '';
+          const lines = chunk.split('\n');
+          for (const line of lines) {
+            if (line.startsWith('event:')) event = line.replace('event:', '').trim();
+            if (line.startsWith('data:')) data += line.replace('data:', '').trim();
+          }
+
+          if (event === 'updates') {
+            try {
+              updates = JSON.parse(data);
+              if (updates.productId) {
+                const newProduct = PRODUCTS.find(p => p.id === updates.productId);
+                if (newProduct) updates.product = newProduct;
+              }
+
+              if (updates.action === 'add_to_cart') {
+                handleAddToCart();
+              }
+
+              setState(prev => ({ ...prev, ...updates }));
+            } catch (e) {
+              console.error('Failed to parse updates', e);
+            }
+          } else if (event === 'delta') {
+            try {
+              const delta = JSON.parse(data);
+              updateMessageContent(assistantId, typeof delta === 'string' ? delta : '');
+            } catch {
+              updateMessageContent(assistantId, data);
+            }
+          } else if (event === 'done') {
+            const payload = JSON.parse(data);
+            setFallbackNotice(!!payload.fallbackUsed);
+
+            // Re-capture state to check for generation
+            setState(prev => {
+              if (shouldGenerateDesigns(prev)) {
+                setTimeout(async () => {
+                  addMessage('assistant', 'Perfect! Let me generate 3 design variants for you... ✨');
+                  await new Promise(resolve => setTimeout(resolve, 1500));
+                  setState(s => ({ ...s, stage: 'preview' }));
+                }, 500);
+              }
+              return prev;
+            });
+          }
         }
       }
-      if (updates.size && updatedState.product?.sizes?.includes(updates.size)) {
-        setSelectedSize(updates.size);
-      }
-      if (updates.quantity) {
-        setQuantity(updates.quantity);
-      }
-
-      if (shouldGenerateDesigns(updatedState) || (updatedState.stage === 'icon' && (updatedState.text || updatedState.icon))) {
-        console.log('[DEBUG] Design generation triggered', {
-          shouldGenerate: shouldGenerateDesigns(updatedState),
-          stage: updatedState.stage,
-          hasText: !!updatedState.text,
-          hasIcon: !!updatedState.icon
-        });
-        setIsTyping(false);
-        addMessage('assistant', 'Perfect! Let me generate 3 design variants for you... ✨');
-
-        await new Promise(resolve => setTimeout(resolve, 1500));
-
-        const generated = generateVariants(
-          updatedState.text || '',
-          findIconByKeyword(updatedState.icon || 'star'),
-          updatedState.vibe,
-          updatedState.occasion
-        );
-
-        setDesigns(generated.variants);
-        setSelectedVariant(generated.recommended);
-
-        setState(prev => ({ ...prev, stage: 'preview' }));
-        addMessage('assistant', `I've created 3 designs for you! Variant ${generated.recommended} is my top recommendation based on your preferences. You can pick any variant, adjust colors and size, then add to cart.`);
-        setIsTyping(false);
-        return;
-      }
 
       setIsTyping(false);
-      addMessage('assistant', (data as any)?.assistantMessage || "I'm here to help! What would you like to do?");
     } catch (err) {
       console.error('LLM Error:', err);
+      addMessage('assistant', "I'm having a bit of trouble connecting right now. Please try again!");
       setIsTyping(false);
-      addMessage('assistant', 'The AI is unavailable (check API keys). Please try again later.');
     }
   };
+
 
   const handleQuickAction = (action: string) => {
     setInput(action);

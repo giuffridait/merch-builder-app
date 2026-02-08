@@ -51,8 +51,14 @@ export function validateCustomizationUpdates(raw: any): CustomizationUpdates {
     updates.stage = raw.stage as CustomizationUpdates['stage'];
   }
 
-  if (typeof raw.productId === 'string' && PRODUCTS.find(p => p.id === raw.productId)) {
-    updates.productId = raw.productId;
+  if (typeof raw.productId === 'string') {
+    const search = raw.productId.toLowerCase();
+    const product = PRODUCTS.find(p =>
+      p.id.toLowerCase() === search ||
+      p.name.toLowerCase() === search ||
+      p.category.toLowerCase() === search
+    );
+    if (product) updates.productId = product.id;
   }
 
   if (typeof raw.occasion === 'string' && OCCASIONS.includes(raw.occasion as any)) {

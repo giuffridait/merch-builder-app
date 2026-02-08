@@ -63,7 +63,7 @@ export default function PreparednessPage() {
             <h3 className="text-sm font-semibold text-[#6b6b6b] mb-3">Agentic Workflow & Prompts</h3>
             <div className="grid md:grid-cols-2 gap-6">
               <div className="text-sm text-[#6b6b6b] space-y-3">
-                <h4 className="font-medium text-[#111111]">State Machine (React + Server Actions)</h4>
+                <h4 className="font-medium text-[#111111]">State Machine (React + Streaming API)</h4>
                 <p>The conversation is managed by a state machine with the following stages:</p>
                 <div className="flex flex-wrap gap-2 text-xs">
                   {['welcome', 'product', 'intent', 'text', 'icon', 'preview'].map(stage => (
@@ -71,10 +71,10 @@ export default function PreparednessPage() {
                   ))}
                 </div>
                 <p>
-                  User input is sent to a server action (<code>chatWithAgent</code>), which calls an LLM (Ollama/Groq) with the current conversation history and state.
+                  User input is sent to a streaming endpoint (<code>/api/create</code>), which provides Server-Sent Events (SSE) for a real-time, per-chunk chat experience.
                 </p>
                 <p>
-                  The LLM returns a JSON object containing the assistant's reply and any state updates (e.g., changing the product color, setting the text).
+                  The API returns JSON updates for the state (e.g., changing colors) and a text delta for the message content.
                 </p>
               </div>
 
@@ -84,8 +84,9 @@ export default function PreparednessPage() {
                   <li><strong>Persona:</strong> "Friendly, confident merch design assistant."</li>
                   <li><strong>Output:</strong> Strict JSON format for state updates.</li>
                   <li><strong>Constraints:</strong> Enforces valid colors, vibes, occasions, and text length.</li>
-                  <li><strong>Logic:</strong> Decides the next stage based on missing information (e.g., if product is selected but color is missing, ask for color).</li>
-                  <li><strong>Fallback:</strong> Gracefully handles API failures with a generic response.</li>
+                  <li><strong>Logic:</strong> Decides the next stage based on missing information.</li>
+                  <li><strong>Fuzzy Parsing:</strong> Robust keyword-based extraction of product, color, and size.</li>
+                  <li><strong>Fallback:</strong> Automatically switches to deterministic keyword matching if the LLM is unavailable.</li>
                 </ul>
               </div>
             </div>

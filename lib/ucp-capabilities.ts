@@ -5,6 +5,7 @@ export const UCP_CAPABILITIES = {
     shipping_estimate: true,
     bulk_pricing: false,
     custom_design: true,
+    streaming_interaction: true,
     inventory_reservation: false
   },
   supported_currencies: ['EUR'],

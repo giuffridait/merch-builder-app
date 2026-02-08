@@ -12,9 +12,11 @@ Gaps for official ACP integration:
 - Public `url` and `image_url` with stable hosting
 - Automated syncs for price/availability
 
-## UCP Readiness
+- **UCP Readiness**
 - **Capability expectations** captured in `data/ucp-capabilities.json`
 - **Flow separation** between discovery (`/discover`) and configuration (`/create`)
+- **Streaming interaction** implemented for configuration flow via Server-Sent Events (SSE)
+- **Robust config parsing** with fuzzy keyword matching for product, color, and size
 - **Cart-ready configuration** output via `CartItem` schema (price, currency, delivery estimate)
 
 Potential future work:

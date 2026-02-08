@@ -5,9 +5,18 @@
     "shipping_estimate": true,
     "bulk_pricing": false,
     "custom_design": true,
+    "streaming_interaction": true,
     "inventory_reservation": false
   },
-  "supported_currencies": ["EUR"],
-  "supported_countries": ["DE", "NL", "FR", "ES", "IT"],
+  "supported_currencies": [
+    "EUR"
+  ],
+  "supported_countries": [
+    "DE",
+    "NL",
+    "FR",
+    "ES",
+    "IT"
+  ],
   "notes": "Placeholder capabilities for UCP preparedness; not wired to a live checkout."
 }
