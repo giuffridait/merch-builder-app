@@ -96,7 +96,8 @@ export async function chatCompletion(
           body: JSON.stringify({
             model: config.model,
             messages,
-            stream: false
+            stream: false,
+            ...(options?.responseFormat === 'json' ? { format: 'json' } : {})
           })
         }, timeoutMs);
 
@@ -107,7 +108,8 @@ export async function chatCompletion(
             body: JSON.stringify({
               model: config.model,
               prompt: messagesToPrompt(messages),
-              stream: false
+              stream: false,
+              ...(options?.responseFormat === 'json' ? { format: 'json' } : {})
             })
           }, timeoutMs);
         }
@@ -183,6 +185,7 @@ export async function chatCompletion(
 
   throw new Error('LLM request failed after retries.');
 }
+
 export type StreamEvent =
   | { type: 'token'; content: string }
   | { type: 'done'; fullContent: string };
