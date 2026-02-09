@@ -1,4 +1,5 @@
 import { getInventory } from './inventory';
+import { toAbsoluteUrl } from './url';
 
 export type OfferItem = {
   item_id: string;
@@ -9,6 +10,9 @@ export type OfferItem = {
   color?: string;
   size?: string;
   material?: string;
+  image_url?: string;
+  images?: { url: string; alt?: string; variant_key?: string }[];
+  product_url?: string;
 };
 
 export type Offer = {
@@ -50,6 +54,34 @@ function generateId(prefix: string) {
   return `${prefix}_${Math.random().toString(36).slice(2, 8)}_${Date.now()}`;
 }
 
+function pickVariantKey(input: { color?: string; size?: string; material?: string }) {
+  const parts = [input.color, input.size, input.material].filter(Boolean);
+  if (parts.length === 0) return null;
+  return parts.join('|').toLowerCase();
+}
+
+function pickVariantImage(
+  item: ReturnType<typeof getInventory>[number],
+  input: { color?: string; size?: string; material?: string }
+) {
+  if (!item.image_url_by_variant) return null;
+  const candidates = [];
+  const color = input.color?.toLowerCase();
+  const size = input.size?.toUpperCase();
+  const material = input.material?.toLowerCase();
+
+  if (color && size && material) candidates.push(`${color}|${size}|${material}`);
+  if (color && material) candidates.push(`${color}|${material}`);
+  if (color && size) candidates.push(`${color}|${size}`);
+  if (color) candidates.push(`${color}`);
+
+  for (const key of candidates) {
+    const found = item.image_url_by_variant[key];
+    if (found) return { key, url: found };
+  }
+  return null;
+}
+
 export function createOffer(input: { item_id: string; quantity: number; color?: string; size?: string; material?: string }) {
   const inventory = getInventory();
   const item = inventory.find(i => i.item_id === input.item_id);
@@ -58,6 +90,18 @@ export function createOffer(input: { item_id: string; quantity: number; color?: 
   const qty = Math.max(1, Math.floor(input.quantity || 1));
   const unit = item.price.amount;
   const total = unit * qty;
+  const variant = pickVariantImage(item, input);
+  const images: { url: string; alt?: string; variant_key?: string }[] = [];
+  if (item.image_url_by_variant) {
+    for (const [key, value] of Object.entries(item.image_url_by_variant)) {
+      if (!value) continue;
+      images.push({ url: toAbsoluteUrl(value), variant_key: key, alt: item.title });
+    }
+  }
+  if (item.image_url) {
+    images.unshift({ url: toAbsoluteUrl(item.image_url), alt: item.title });
+  }
+
   const offer: Offer = {
     offer_id: generateId('offer'),
     created_at: new Date().toISOString(),
@@ -72,7 +116,10 @@ export function createOffer(input: { item_id: string; quantity: number; color?: 
         currency: item.price.currency,
         color: input.color,
         size: input.size,
-        material: input.material
+        material: input.material,
+        image_url: toAbsoluteUrl(variant?.url || item.image_url),
+        images: images.length > 0 ? images : undefined,
+        product_url: item.url ? toAbsoluteUrl(item.url) : undefined
       }
     ],
     total

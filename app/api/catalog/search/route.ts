@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getInventory } from '@/lib/inventory';
+import { toAbsoluteUrl } from '@/lib/url';
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
@@ -46,7 +47,23 @@ export async function GET(req: NextRequest) {
 
   const response = {
     count: items.length,
-    items: items.slice(0, limit)
+    items: items.slice(0, limit).map(item => {
+      const images: { url: string; alt?: string; variant_key?: string }[] = [];
+      if (item.image_url_by_variant) {
+        for (const [key, value] of Object.entries(item.image_url_by_variant)) {
+          if (!value) continue;
+          images.push({ url: toAbsoluteUrl(value), variant_key: key, alt: item.title });
+        }
+      }
+      if (item.image_url) {
+        images.unshift({ url: toAbsoluteUrl(item.image_url), alt: item.title });
+      }
+      return {
+        ...item,
+        image_url: toAbsoluteUrl(item.image_url),
+        images: images.length > 0 ? images : undefined
+      };
+    })
   };
 
   return NextResponse.json(response);

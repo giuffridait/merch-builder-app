@@ -1,0 +1,315 @@
+openapi: 3.1.0
+info:
+  title: MerchForge ACP Endpoints
+  version: 1.0.0
+servers:
+  - url: https://merch-builder-app.vercel.app
+paths:
+  /api/catalog/search:
+    get:
+      operationId: searchCatalog
+      summary: Search inventory catalog
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: [tee, hoodie, tote, mug]
+        - name: color
+          in: query
+          schema:
+            type: string
+        - name: material
+          in: query
+          schema:
+            type: string
+        - name: max_price
+          in: query
+          schema:
+            type: number
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 12
+      responses:
+        "200":
+          description: Catalog results
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [count, items]
+                properties:
+                  count:
+                    type: integer
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ACPItem"
+  /api/offer:
+    post:
+      operationId: createOffer
+      summary: Create an offer from a catalog item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OfferRequest"
+      responses:
+        "200":
+          description: Offer created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Offer"
+        "400":
+          description: Missing required fields
+        "404":
+          description: Item not found
+  /api/commit:
+    post:
+      operationId: commitOffer
+      summary: Commit an offer into an order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommitRequest"
+      responses:
+        "200":
+          description: Order confirmed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          description: Missing required fields
+        "404":
+          description: Offer not found or expired
+  /api/order/{id}:
+    get:
+      operationId: getOrder
+      summary: Get an order by id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Order details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "404":
+          description: Order not found
+components:
+  schemas:
+    ACPImage:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+          description: Official primary product image. Do not substitute.
+        alt:
+          type: string
+        variant_key:
+          type: string
+          description: Variant key, e.g. "black|M|cotton"
+    ACPPrice:
+      type: object
+      required: [amount, currency]
+      properties:
+        amount:
+          type: number
+        currency:
+          type: string
+    ACPVariant:
+      type: object
+      required: [sizes, colors]
+      properties:
+        sizes:
+          type: array
+          items:
+            type: string
+        colors:
+          type: array
+          items:
+            type: object
+            required: [name, hex]
+            properties:
+              name:
+                type: string
+              hex:
+                type: string
+    ACPAttributes:
+      type: object
+      required: [category, materials, lead_time_days, min_qty, tags, variants]
+      properties:
+        category:
+          type: string
+        materials:
+          type: array
+          items:
+            type: string
+        lead_time_days:
+          type: integer
+        min_qty:
+          type: integer
+        tags:
+          type: array
+          items:
+            type: string
+        variants:
+          $ref: "#/components/schemas/ACPVariant"
+    ACPItem:
+      type: object
+      required:
+        [
+          item_id,
+          title,
+          description,
+          url,
+          image_url,
+          price,
+          availability,
+          is_eligible_search,
+          is_eligible_checkout,
+          attributes
+        ]
+      properties:
+        item_id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        url:
+          type: string
+        image_url:
+          type: string
+          description: Official primary product image. Do not substitute.
+        images:
+          type: array
+          description: Official images. Prefer these over any illustrative images.
+          items:
+            $ref: "#/components/schemas/ACPImage"
+        image_url_by_variant:
+          type: object
+          additionalProperties:
+            type: string
+        availability_by_variant:
+          type: object
+          additionalProperties:
+            type: string
+        price:
+          $ref: "#/components/schemas/ACPPrice"
+        availability:
+          type: string
+        availability_date:
+          type: string
+        is_eligible_search:
+          type: boolean
+        is_eligible_checkout:
+          type: boolean
+        attributes:
+          $ref: "#/components/schemas/ACPAttributes"
+    OfferRequest:
+      type: object
+      required: [item_id, quantity]
+      properties:
+        item_id:
+          type: string
+        quantity:
+          type: integer
+        color:
+          type: string
+        size:
+          type: string
+        material:
+          type: string
+    OfferItem:
+      type: object
+      required: [item_id, quantity, unit_price, total_price, currency]
+      properties:
+        item_id:
+          type: string
+        quantity:
+          type: integer
+        unit_price:
+          type: number
+        total_price:
+          type: number
+        currency:
+          type: string
+        color:
+          type: string
+        size:
+          type: string
+        material:
+          type: string
+        image_url:
+          type: string
+          description: Official image for the selected variant.
+        images:
+          type: array
+          items:
+            $ref: "#/components/schemas/ACPImage"
+        product_url:
+          type: string
+    Offer:
+      type: object
+      required: [offer_id, created_at, items, total, currency, status]
+      properties:
+        offer_id:
+          type: string
+        created_at:
+          type: string
+        status:
+          type: string
+          enum: [open, expired]
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OfferItem"
+        total:
+          type: number
+        currency:
+          type: string
+    CommitRequest:
+      type: object
+      required: [offer_id]
+      properties:
+        offer_id:
+          type: string
+    Order:
+      type: object
+      required: [order_id, created_at, status, items, total, currency, delivery_estimate_days]
+      properties:
+        order_id:
+          type: string
+        created_at:
+          type: string
+        status:
+          type: string
+          enum: [confirmed, cancelled]
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OfferItem"
+        total:
+          type: number
+        currency:
+          type: string
+        delivery_estimate_days:
+          type: integer

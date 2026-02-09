@@ -9,7 +9,8 @@
     "lint": "next lint",
     "test:inventory": "node scripts/validate-inventory.js",
     "test:smoke": "node scripts/smoke-discover.js",
-    "test:ucp": "tsx scripts/ucp-endpoints.test.ts"
+    "test:ucp": "tsx scripts/ucp-endpoints.test.ts",
+    "test:acp-images": "tsx scripts/acp-image.test.ts"
   },
   "dependencies": {
     "next": "^14.2.0",
