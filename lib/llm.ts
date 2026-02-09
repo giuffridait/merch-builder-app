@@ -1,3 +1,5 @@
+import { logLangfuseTrace } from './langfuse';
+
 type ChatMessage = {
   role: 'system' | 'user' | 'assistant';
   content: string;
@@ -122,8 +124,15 @@ export async function chatCompletion(
         }
 
         const data = await res.json();
-        if (data?.message?.content) return data.message.content;
-        return data?.response || '';
+        const content = data?.message?.content || data?.response || '';
+        await logLangfuseTrace({
+          name: 'chatCompletion',
+          model: config.model,
+          input: messages,
+          output: content,
+          metadata: { provider: config.provider, responseFormat: options?.responseFormat }
+        });
+        return content;
       }
 
       if (!config.baseUrl || !config.apiKey) {
@@ -156,7 +165,15 @@ export async function chatCompletion(
       }
 
       const data = await res.json();
-      return data?.choices?.[0]?.message?.content || '';
+      const content = data?.choices?.[0]?.message?.content || '';
+      await logLangfuseTrace({
+        name: 'chatCompletion',
+        model: config.model,
+        input: messages,
+        output: content,
+        metadata: { provider: config.provider, responseFormat: options?.responseFormat }
+      });
+      return content;
     } catch (err: any) {
       if (attempt < maxRetries && (err?.name === 'AbortError' || err?.name === 'TypeError')) {
         await sleep(retryDelay * (attempt + 1));
@@ -221,6 +238,13 @@ export async function* streamChatCompletion(
       }
     }
 
+    await logLangfuseTrace({
+      name: 'streamChatCompletion',
+      model: config.model,
+      input: messages,
+      output: fullContent,
+      metadata: { provider: config.provider, responseFormat: options?.responseFormat }
+    });
     yield { type: 'done', fullContent };
     return;
   }
@@ -279,5 +303,12 @@ export async function* streamChatCompletion(
     }
   }
 
+  await logLangfuseTrace({
+    name: 'streamChatCompletion',
+    model: config.model,
+    input: messages,
+    output: fullContent,
+    metadata: { provider: config.provider, responseFormat: options?.responseFormat }
+  });
   yield { type: 'done', fullContent };
 }
