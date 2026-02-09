@@ -1,0 +1,57 @@
+# MerchForge
+
+> AI-guided custom merchandise builder. Discover products from inventory or design custom merch through conversational AI — tees, hoodies, and totes with text, icons, and LLM-generated SVG layouts.
+
+## Overview
+
+MerchForge is a Next.js commerce app with two AI-powered flows:
+
+- **Discover** (`/discover`): Describe what you need (budget, color, material, quantity, timing) and the AI recommends the best products from the catalog with clear reasoning.
+- **Create** (`/create`): Design custom merchandise through guided conversation. Specify product, text, icon, colors, and size in any order. The AI generates 3 unique SVG design layouts and provides a live preview.
+
+## Products
+
+The catalog includes:
+- **Classic Tee** (€19.99) — Colors: Black, White, Navy, Forest, Burgundy. Sizes: XS–2XL.
+- **Comfort Hoodie** (€39.99) — Colors: Black, Charcoal, Navy, Burgundy. Sizes: S–2XL.
+- **Canvas Tote** (€14.99) — Colors: Natural, Black. One size.
+
+Print fee: €3.00 per item. Estimated delivery: 7 days.
+
+## API Endpoints
+
+- `POST /api/discover` — Inventory discovery with natural language constraints
+- `POST /api/create` — Streaming customization assistant (SSE)
+- `POST /api/chat` — Customization assistant (JSON)
+- `POST /api/designs` — LLM-powered SVG design generation
+- `GET /api/catalog/search` — Product catalog search
+- `POST /api/offer` — Create a purchase offer
+- `POST /api/commit` — Commit an order
+- `GET /api/order/[id]` — Retrieve order details
+- `GET /.well-known/ucp-capabilities.json` — UCP capability flags
+
+## How the AI Works
+
+### Conversation Engine
+The LLM receives the current state (selected product, text, icon, colors, size) and returns structured JSON with an assistant message plus updates. A deterministic keyword parser runs alongside the LLM as fallback. Readiness predicates (`canPreview`, `canAddToCart`) control when design generation and cart actions become available.
+
+### Design Generation
+When enough context is provided (product + text or icon), the LLM describes design layouts using semantic tokens — no pixel coordinates. The LLM picks from a vocabulary of composition types (stacked, badge, split, overlay, minimal, banner), text sizes (small/medium/large), fonts (sans/serif/display), icon positions (above/below/left/right/behind), and border styles (none/underline/circle/double-circle/box/dots). A deterministic renderer maps these tokens to SVG. Three distinct variants are generated per request.
+
+### Inventory Discovery
+The LLM ranks filtered inventory items and provides a rationale. Constraints are parsed from natural language (budget, color, material, quantity, lead time) and validated against the ACP-compliant inventory schema.
+
+## Tech Stack
+
+- Next.js 14 (App Router), React 18, TypeScript, Tailwind CSS
+- Multi-LLM: Ollama (local), Groq, OpenAI-compatible
+- SSE streaming for real-time responses
+- LocalStorage cart management
+
+## Key Pages
+
+- `/` — Home page with flow selection
+- `/discover` — Inventory discovery assistant
+- `/create` — Customization and design flow
+- `/cart` — Shopping cart
+- `/preparedness` — ACP/UCP commerce readiness documentation

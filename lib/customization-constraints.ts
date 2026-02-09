@@ -25,7 +25,6 @@ export const TEXT_COLOR_OPTIONS: Record<string, { name: string; hex: string }> =
 };
 
 export type CustomizationUpdates = {
-  stage?: 'welcome' | 'product' | 'intent' | 'text' | 'icon' | 'generating' | 'preview' | 'complete';
   productId?: string;
   occasion?: (typeof OCCASIONS)[number];
   vibe?: (typeof VIBES)[number];
@@ -37,11 +36,11 @@ export type CustomizationUpdates = {
   alignment?: 'left' | 'center' | 'right';
   vertical?: 'top' | 'middle' | 'bottom';
   scale?: 'small' | 'medium' | 'large';
-  color?: string; // Alias for productColor used in discovery
+  color?: string;
   size?: string;
-  budgetMax?: number; // Used in discovery
-  leadTimeMax?: number; // Used in discovery
-  materials?: string[]; // Used in discovery
+  budgetMax?: number;
+  leadTimeMax?: number;
+  materials?: string[];
   quantity?: number;
   action?: 'add_to_cart' | 'remove_icon';
 };
@@ -54,10 +53,6 @@ export function normalizeText(text?: string) {
 export function validateCustomizationUpdates(raw: any): CustomizationUpdates {
   const updates: CustomizationUpdates = {};
   if (!raw || typeof raw !== 'object') return updates;
-
-  if (typeof raw.stage === 'string') {
-    updates.stage = raw.stage as CustomizationUpdates['stage'];
-  }
 
   let validatedProduct: any = null;
   if (typeof raw.productId === 'string') {
@@ -108,7 +103,6 @@ export function validateCustomizationUpdates(raw: any): CustomizationUpdates {
   const rawColor = raw.productColor || raw.color;
   if (typeof rawColor === 'string') {
     const color = rawColor.toLowerCase();
-    // Prevent literal placeholders like "string" or "color"
     if (color !== 'string' && color !== 'color' && color !== 'productcolor') {
       const isValid = validatedProduct
         ? validatedProduct.colors.some((c: any) => c.name.toLowerCase() === color)
@@ -146,7 +140,6 @@ export function validateCustomizationUpdates(raw: any): CustomizationUpdates {
     updates.quantity = qty;
   }
 
-  // Discovery fields
   if (typeof raw.budgetMax === 'number' && raw.budgetMax > 0) {
     updates.budgetMax = raw.budgetMax;
   }
