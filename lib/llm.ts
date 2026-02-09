@@ -1,3 +1,5 @@
+import { logLangfuseTrace } from './langfuse';
+
 type ChatMessage = {
   role: 'system' | 'user' | 'assistant';
   content: string;
@@ -120,8 +122,15 @@ export async function chatCompletion(
         }
 
         const data = await res.json();
-        if (data?.message?.content) return data.message.content;
-        return data?.response || '';
+        const content = data?.message?.content || data?.response || '';
+        await logLangfuseTrace({
+          name: 'chatCompletion',
+          model: config.model,
+          input: messages,
+          output: content,
+          metadata: { provider: config.provider, responseFormat: options?.responseFormat }
+        });
+        return content;
       }
 
       if (!config.baseUrl || !config.apiKey) {
@@ -154,7 +163,15 @@ export async function chatCompletion(
       }
 
       const data = await res.json();
-      return data?.choices?.[0]?.message?.content || '';
+      const content = data?.choices?.[0]?.message?.content || '';
+      await logLangfuseTrace({
+        name: 'chatCompletion',
+        model: config.model,
+        input: messages,
+        output: content,
+        metadata: { provider: config.provider, responseFormat: options?.responseFormat }
+      });
+      return content;
     } catch (err: any) {
       if (attempt < maxRetries && (err?.name === 'AbortError' || err?.name === 'TypeError')) {
         await sleep(retryDelay * (attempt + 1));
@@ -165,4 +182,130 @@ export async function chatCompletion(
   }
 
   throw new Error('LLM request failed after retries.');
+}
+export type StreamEvent =
+  | { type: 'token'; content: string }
+  | { type: 'done'; fullContent: string };
+
+export async function* streamChatCompletion(
+  messages: ChatMessage[],
+  options?: { responseFormat?: 'json' }
+): AsyncGenerator<StreamEvent> {
+  const config = getConfig();
+  const timeoutMs = parseInt(process.env.LLM_TIMEOUT_MS || `${DEFAULT_TIMEOUT_MS}`, 10);
+
+  if (config.provider === 'ollama') {
+    const res = await fetchWithTimeout(`${config.baseUrl}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: config.model,
+        messages,
+        stream: true,
+        ...(options?.responseFormat === 'json' ? { format: 'json' } : {})
+      })
+    }, timeoutMs);
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Ollama stream error: ${res.status} ${text}`);
+    }
+
+    const reader = res.body!.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let fullContent = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        try {
+          const chunk = JSON.parse(line);
+          const token = chunk?.message?.content || '';
+          if (token) {
+            fullContent += token;
+            yield { type: 'token', content: token };
+          }
+        } catch { /* skip malformed lines */ }
+      }
+    }
+
+    await logLangfuseTrace({
+      name: 'streamChatCompletion',
+      model: config.model,
+      input: messages,
+      output: fullContent,
+      metadata: { provider: config.provider, responseFormat: options?.responseFormat }
+    });
+    yield { type: 'done', fullContent };
+    return;
+  }
+
+  // OpenAI / Groq compatible streaming
+  if (!config.baseUrl || !config.apiKey) {
+    throw new Error('API base URL and API key are required for streaming.');
+  }
+
+  const res = await fetchWithTimeout(`${config.baseUrl}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${config.apiKey}`
+    },
+    body: JSON.stringify({
+      model: config.model,
+      messages,
+      temperature: 0.4,
+      stream: true,
+      ...(options?.responseFormat === 'json'
+        ? { response_format: { type: 'json_object' } }
+        : {})
+    })
+  }, timeoutMs);
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Stream error: ${res.status} ${text}`);
+  }
+
+  const reader = res.body!.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let fullContent = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || !trimmed.startsWith('data: ')) continue;
+      const data = trimmed.slice(6);
+      if (data === '[DONE]') continue;
+      try {
+        const chunk = JSON.parse(data);
+        const token = chunk?.choices?.[0]?.delta?.content || '';
+        if (token) {
+          fullContent += token;
+          yield { type: 'token', content: token };
+        }
+      } catch { /* skip malformed SSE lines */ }
+    }
+  }
+
+  await logLangfuseTrace({
+    name: 'streamChatCompletion',
+    model: config.model,
+    input: messages,
+    output: fullContent,
+    metadata: { provider: config.provider, responseFormat: options?.responseFormat }
+  });
+  yield { type: 'done', fullContent };
 }
