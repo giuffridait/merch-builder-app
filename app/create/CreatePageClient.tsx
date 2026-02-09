@@ -31,7 +31,7 @@ export default function CreatePage() {
       {
         id: '1',
         role: 'assistant',
-        content: "What would you like to make? A tee, hoodie, or tote?",
+        content: "What would you like to make? A tee, hoodie, or tote? You can also say things like “change the text”, “move it up”, or “make it bigger.”",
         timestamp: Date.now()
       }
     ]
@@ -511,6 +511,15 @@ export default function CreatePage() {
     }
   };
 
+  const designControls = [
+    { label: 'Text', prompt: 'Text: "Stay Wild"' },
+    { label: 'Color', prompt: 'Make the text pink' },
+    { label: 'Icon', prompt: 'Add a lightning bolt icon' },
+    { label: 'Layout', prompt: 'Put text above the icon' },
+    { label: 'Position', prompt: 'Move it slightly up' },
+    { label: 'Size', prompt: 'Make the design bigger' }
+  ];
+
   return (
     <div className="min-h-screen bg-[#ffffff] text-[#111111] flex flex-col">
       {/* Header */}
@@ -581,6 +590,25 @@ export default function CreatePage() {
                   Using fallback mode (AI unavailable). Responses may be less flexible.
                 </div>
               )}
+
+              {/* Design helpers */}
+              <div className="mt-3">
+                <div className="text-xs text-[#6b6b6b] mb-2">Design controls (type or tap):</div>
+                <div className="flex flex-wrap gap-2">
+                  {designControls.map((control) => (
+                    <button
+                      key={control.label}
+                      onClick={() => {
+                        setInput(control.prompt);
+                        setTimeout(() => inputRef.current?.focus(), 0);
+                      }}
+                      className="px-2.5 py-1 text-xs bg-[#ffffff] hover:bg-[#f7f7f7] border border-[#e4e4e4] rounded-full transition-all"
+                    >
+                      {control.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
               {/* Quick Actions */}
               {suggestedActions().length > 0 && (
