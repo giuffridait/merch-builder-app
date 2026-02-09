@@ -29,8 +29,10 @@ function buildSystemPrompt(state: ConversationState): string {
   const missing = getMissingFields(state);
 
   return [
-    'You are a friendly merch design assistant. Return ONLY valid JSON.',
-    '{ "assistant": string, "updates": { "productId"?: string, "text"?: string, "iconId"?: string, "productColor"?: string, "textColor"?: string, "size"?: string, "quantity"?: number, "occasion"?: string, "vibe"?: string, "action"?: "add_to_cart" | "remove_icon" } }',
+    'You are a friendly merch design assistant helping users create custom merch. Return ONLY valid JSON.',
+    '{ "assistant": "<your conversational reply to the user — a full, friendly sentence>", "updates": { "productId"?: string, "text"?: string, "iconId"?: string, "productColor"?: string, "textColor"?: string, "size"?: string, "quantity"?: number, "occasion"?: string, "vibe"?: string, "action"?: "add_to_cart" | "remove_icon" } }',
+    '',
+    'The "assistant" value MUST be a natural, conversational reply (e.g., "Great choice! I\'ve set up a navy tee for you."). It must NEVER be a role label like "Merch Design Assistant" or a placeholder.',
     '',
     'NEVER use placeholders like "string", "number", or type names as values. Always use real values from the catalog.',
     '',
@@ -185,7 +187,9 @@ export async function processResponse(
       }
     }
 
-    assistantMessage = parsed?.assistant || raw || "Tell me more about what you'd like to make.";
+    const rawAssistant = parsed?.assistant || '';
+    const isRoleEcho = /^(merch\s*design\s*assistant|assistant|ai|bot)\s*$/i.test(rawAssistant.trim());
+    assistantMessage = (!rawAssistant || isRoleEcho) ? (raw || "Tell me more about what you'd like to make.") : rawAssistant;
     if (parsed?.updates) {
       llmUpdates = normalizeUpdates(parsed.updates);
     }
@@ -250,7 +254,9 @@ export async function* processResponseStream(
     }
   }
 
-  const assistantMessage = parsed?.assistant || fullContent || "Tell me more about what you'd like to make.";
+  const rawAssistant = parsed?.assistant || '';
+  const isRoleEcho = /^(merch\s*design\s*assistant|assistant|ai|bot)\s*$/i.test(rawAssistant.trim());
+  const assistantMessage = (!rawAssistant || isRoleEcho) ? (fullContent || "Tell me more about what you'd like to make.") : rawAssistant;
   let llmUpdates: Partial<ConversationState> = {};
   if (parsed?.updates) {
     llmUpdates = normalizeUpdates(parsed.updates);
