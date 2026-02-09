@@ -183,6 +183,7 @@ export function useCreateFlow() {
   const textOnlyVariant: DesignVariant = {
     id: 'text-only',
     name: 'Text Only',
+    layout: 'text_only',
     style: 'Modern & Clean',
     svg: state.text ? buildTextOnlySVG(state.text) : '',
     score: 80,
