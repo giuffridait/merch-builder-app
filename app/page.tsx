@@ -60,7 +60,7 @@ export default function Home() {
               href="/preparedness"
               className="inline-flex items-center justify-center px-4 py-2 rounded-full border border-[#e4e4e4] text-[#6b6b6b] hover:text-[#111111] hover:bg-[#f7f7f7] transition-all text-sm"
             >
-              View ACP/UCP Preparedness
+              Tech Specs
             </Link>
         </div>
       </div>

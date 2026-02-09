@@ -72,7 +72,7 @@ export default function PreparednessPage() {
                 </div>
                 <p>Updates can set multiple fields in one turn (e.g., product + color + text).</p>
                 <p>JSON parsing includes self-correction retries when the model drifts.</p>
-                <p>Customization responses are currently non-streaming (single response per turn).</p>
+                <p>Customization responses can stream when the provider supports it.</p>
               </div>
 
               <div className="text-sm text-[#6b6b6b] space-y-3">
