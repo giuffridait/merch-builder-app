@@ -2,118 +2,232 @@ import { chatCompletion } from '@/lib/llm';
 import { Icon, ICON_LIBRARY } from '@/lib/icons';
 import { DesignVariant } from '@/lib/design';
 
-// ── LLM-Described Design Layout ────────────────────────────────────────────────
+// ── Semantic Design Schema ─────────────────────────────────────────────────────
+// The LLM picks from a small vocabulary of tokens. The renderer maps them to SVG.
 
-export interface DesignLayout {
+export interface SemanticDesign {
   name: string;
   style: string;
   reasoning: string;
-  text: {
-    content: string;
-    y: number;          // 0-400 viewBox coordinate
-    fontSize: number;   // 24-72
-    fontWeight: number; // 400-900
-    fontFamily: 'sans-serif' | 'serif' | 'impact';
-    letterSpacing: number; // -2 to 6
-    textTransform: 'uppercase' | 'none';
-  };
-  icon?: {
-    x: number;          // center X, 0-400
-    y: number;          // center Y, 0-400
-    scale: number;      // 1-5
-    filled: boolean;    // fill vs stroke
-    opacity: number;    // 0.1-1
-  };
-  decorations: Decoration[];
+  composition: 'stacked' | 'badge' | 'split' | 'overlay' | 'minimal' | 'banner';
+  textSize: 'small' | 'medium' | 'large';
+  textStyle: 'light' | 'regular' | 'bold' | 'heavy';
+  font: 'sans' | 'serif' | 'display';
+  uppercase: boolean;
+  iconPosition: 'above' | 'below' | 'left' | 'right' | 'behind' | 'none';
+  iconSize: 'small' | 'medium' | 'large';
+  iconFilled: boolean;
+  border: 'none' | 'underline' | 'circle' | 'double-circle' | 'box' | 'dots';
 }
 
-type Decoration =
-  | { type: 'line'; x1: number; y1: number; x2: number; y2: number; strokeWidth: number }
-  | { type: 'circle'; cx: number; cy: number; r: number; filled: boolean; strokeWidth: number; strokeDasharray?: string }
-  | { type: 'arc-text'; text: string; y: number; fontSize: number };
+// ── Renderer: Semantic → SVG ───────────────────────────────────────────────────
 
-// ── SVG Renderer ───────────────────────────────────────────────────────────────
+const FONT_MAP = {
+  sans: "'Helvetica Neue', sans-serif",
+  serif: "'Georgia', serif",
+  display: "'Impact', sans-serif"
+};
 
-function renderLayoutToSVG(layout: DesignLayout, icon: Icon): string {
-  const parts: string[] = [];
-  parts.push('<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">');
+const TEXT_SIZE_MAP = { small: 32, medium: 44, large: 58 };
+const TEXT_WEIGHT_MAP = { light: 300, regular: 400, bold: 700, heavy: 900 };
+const ICON_SCALE_MAP = { small: 1.5, medium: 2.5, large: 4 };
 
-  // Decorations (background elements)
-  for (const dec of layout.decorations) {
-    if (dec.type === 'circle') {
-      if (dec.filled) {
-        parts.push(`<circle cx="${dec.cx}" cy="${dec.cy}" r="${dec.r}" fill="currentColor" opacity="0.1" />`);
+function renderSemanticToSVG(design: SemanticDesign, text: string, icon: Icon | null): string {
+  const parts: string[] = ['<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">'];
+
+  const fontSize = TEXT_SIZE_MAP[design.textSize];
+  const fontWeight = TEXT_WEIGHT_MAP[design.textStyle];
+  const fontFamily = FONT_MAP[design.font];
+  const displayText = design.uppercase ? text.toUpperCase() : text;
+  const hasIcon = !!icon?.path && design.iconPosition !== 'none';
+  const iconScale = ICON_SCALE_MAP[design.iconSize];
+  const iconOffset = -12; // Icon paths are 24x24, center is at 12,12
+
+  // Compute layout positions based on composition
+  let textX = 200, textY = 200;
+  let iconX = 200, iconY = 200;
+
+  switch (design.composition) {
+    case 'stacked':
+      // Icon above or below text, centered
+      if (hasIcon && design.iconPosition === 'below') {
+        textY = 160;
+        iconY = 240;
+      } else if (hasIcon) {
+        // Default: icon above
+        iconY = 130;
+        textY = 230;
       } else {
-        parts.push(`<circle cx="${dec.cx}" cy="${dec.cy}" r="${dec.r}" fill="none" stroke="currentColor" stroke-width="${dec.strokeWidth}"${dec.strokeDasharray ? ` stroke-dasharray="${dec.strokeDasharray}"` : ''} />`);
+        textY = 210;
       }
-    } else if (dec.type === 'line') {
-      parts.push(`<line x1="${dec.x1}" y1="${dec.y1}" x2="${dec.x2}" y2="${dec.y2}" stroke="currentColor" stroke-width="${dec.strokeWidth}" />`);
-    } else if (dec.type === 'arc-text') {
-      parts.push(`<path id="arc-${dec.y}" d="M 60,${dec.y} Q 200,${dec.y + 40} 340,${dec.y}" fill="none" />`);
-      parts.push(`<text font-family="'Georgia', serif" font-size="${dec.fontSize}" font-weight="700" fill="currentColor">`);
-      parts.push(`<textPath href="#arc-${dec.y}" startOffset="50%" text-anchor="middle">${dec.text}</textPath>`);
-      parts.push('</text>');
-    }
+      break;
+
+    case 'badge':
+      // Centered with icon above text, both inside a circle
+      iconY = hasIcon ? 155 : 200;
+      textY = hasIcon ? 240 : 210;
+      break;
+
+    case 'split':
+      // Icon on left/right, text on opposite side
+      if (hasIcon && design.iconPosition === 'right') {
+        textX = 140;
+        textY = 200;
+        iconX = 300;
+        iconY = 190;
+      } else if (hasIcon) {
+        // Default: icon left
+        iconX = 100;
+        iconY = 190;
+        textX = 260;
+        textY = 200;
+      } else {
+        textY = 210;
+      }
+      break;
+
+    case 'overlay':
+      // Large icon behind, text on top
+      iconY = 190;
+      textY = 210;
+      break;
+
+    case 'minimal':
+      // Just text, maybe small icon underneath
+      textY = hasIcon ? 180 : 210;
+      iconY = 250;
+      break;
+
+    case 'banner':
+      // Text at top, icon centered below, underline decoration
+      textY = 140;
+      iconY = hasIcon ? 250 : 200;
+      break;
   }
 
-  // Icon
-  if (layout.icon && icon.path) {
-    const ix = layout.icon.x;
-    const iy = layout.icon.y;
-    const s = layout.icon.scale;
-    const offset = -12 * s;
-    if (layout.icon.filled) {
-      parts.push(`<g transform="translate(${ix}, ${iy})"><path d="${icon.path}" fill="currentColor" opacity="${layout.icon.opacity}" transform="translate(${offset}, ${offset}) scale(${s})" /></g>`);
+  // ── Render border / decorations ──────────────────────────────────────────
+
+  switch (design.border) {
+    case 'circle':
+      parts.push('<circle cx="200" cy="200" r="150" fill="none" stroke="currentColor" stroke-width="4" />');
+      break;
+    case 'double-circle':
+      parts.push('<circle cx="200" cy="200" r="145" fill="none" stroke="currentColor" stroke-width="5" />');
+      parts.push('<circle cx="200" cy="200" r="158" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="4,4" />');
+      break;
+    case 'box':
+      parts.push('<rect x="40" y="40" width="320" height="320" rx="12" fill="none" stroke="currentColor" stroke-width="3" />');
+      break;
+    case 'underline':
+      parts.push(`<line x1="80" y1="${textY + 12}" x2="320" y2="${textY + 12}" stroke="currentColor" stroke-width="4" />`);
+      break;
+    case 'dots':
+      parts.push('<circle cx="200" cy="200" r="155" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="2,8" stroke-linecap="round" />');
+      break;
+  }
+
+  // ── Render icon ──────────────────────────────────────────────────────────
+
+  if (hasIcon && icon) {
+    const s = design.composition === 'overlay' ? Math.max(iconScale, 5) : iconScale;
+    const o = iconOffset * s;
+    const opacity = design.composition === 'overlay' ? 0.15 : 1;
+
+    if (design.iconFilled) {
+      parts.push(`<g transform="translate(${iconX}, ${iconY})"><path d="${icon.path}" fill="currentColor" opacity="${opacity}" transform="translate(${o}, ${o}) scale(${s})" /></g>`);
     } else {
-      parts.push(`<g transform="translate(${ix}, ${iy})"><path d="${icon.path}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="${layout.icon.opacity}" transform="translate(${offset}, ${offset}) scale(${s})" /></g>`);
+      parts.push(`<g transform="translate(${iconX}, ${iconY})"><path d="${icon.path}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="${opacity}" transform="translate(${o}, ${o}) scale(${s})" /></g>`);
     }
   }
 
-  // Text
-  const t = layout.text;
-  const fontMap = { 'sans-serif': "'Helvetica Neue', sans-serif", 'serif': "'Georgia', serif", 'impact': "'Impact', sans-serif" };
-  const displayText = t.textTransform === 'uppercase' ? t.content.toUpperCase() : t.content;
-  parts.push(`<text x="200" y="${t.y}" font-family="${fontMap[t.fontFamily]}" font-size="${t.fontSize}" font-weight="${t.fontWeight}" text-anchor="middle" fill="currentColor" letter-spacing="${t.letterSpacing}">${displayText}</text>`);
+  // ── Render text ──────────────────────────────────────────────────────────
+
+  const letterSpacing = design.font === 'display' ? 3 : (design.textStyle === 'light' ? 2 : 0);
+  parts.push(`<text x="${textX}" y="${textY}" font-family="${fontFamily}" font-size="${fontSize}" font-weight="${fontWeight}" text-anchor="middle" fill="currentColor" letter-spacing="${letterSpacing}">${displayText}</text>`);
 
   parts.push('</svg>');
   return parts.join('\n');
 }
 
-// ── Fallback (original templates) ──────────────────────────────────────────────
+// ── Fallback Designs (no LLM needed) ───────────────────────────────────────────
 
-function fallbackLayouts(text: string, hasIcon: boolean): DesignLayout[] {
+function fallbackDesigns(hasIcon: boolean): SemanticDesign[] {
   return [
     {
-      name: 'Minimal',
-      style: 'Clean text-focused with subtle accent',
-      reasoning: 'Clean composition with restrained icon placement.',
-      text: { content: text, y: hasIcon ? 180 : 210, fontSize: 48, fontWeight: 700, fontFamily: 'sans-serif', letterSpacing: -1, textTransform: 'uppercase' },
-      icon: hasIcon ? { x: 200, y: 240, scale: 1.5, filled: false, opacity: 1 } : undefined,
-      decorations: []
+      name: 'Clean Minimal',
+      style: 'Understated elegance',
+      reasoning: 'Clean composition lets the text speak for itself.',
+      composition: 'minimal',
+      textSize: 'large',
+      textStyle: 'bold',
+      font: 'sans',
+      uppercase: true,
+      iconPosition: hasIcon ? 'below' : 'none',
+      iconSize: 'small',
+      iconFilled: false,
+      border: 'none'
     },
     {
       name: 'Bold Statement',
-      style: 'Maximum impact with large elements',
-      reasoning: 'Commands attention through scale and contrast.',
-      text: { content: text, y: 280, fontSize: 56, fontWeight: 900, fontFamily: 'impact', letterSpacing: 2, textTransform: 'uppercase' },
-      icon: hasIcon ? { x: 200, y: 140, scale: 4, filled: true, opacity: 0.9 } : undefined,
-      decorations: [{ type: 'line', x1: 80, y1: 300, x2: 320, y2: 300, strokeWidth: 4 }]
+      style: 'Maximum visual impact',
+      reasoning: 'Large icon and heavy text command attention.',
+      composition: 'stacked',
+      textSize: 'large',
+      textStyle: 'heavy',
+      font: 'display',
+      uppercase: true,
+      iconPosition: hasIcon ? 'above' : 'none',
+      iconSize: 'large',
+      iconFilled: true,
+      border: 'underline'
     },
     {
       name: 'Retro Badge',
       style: 'Vintage-inspired circular composition',
-      reasoning: 'Nostalgic aesthetic with circular framing.',
-      text: { content: text, y: 260, fontSize: 38, fontWeight: 700, fontFamily: 'serif', letterSpacing: 1, textTransform: 'uppercase' },
-      icon: hasIcon ? { x: 200, y: 150, scale: 2.5, filled: true, opacity: 1 } : undefined,
-      decorations: [
-        { type: 'circle', cx: 200, cy: 200, r: 140, filled: false, strokeWidth: 6 },
-        { type: 'circle', cx: 200, cy: 200, r: 150, filled: false, strokeWidth: 2, strokeDasharray: '5,5' }
-      ]
+      reasoning: 'Classic badge aesthetic with timeless appeal.',
+      composition: 'badge',
+      textSize: 'medium',
+      textStyle: 'bold',
+      font: 'serif',
+      uppercase: true,
+      iconPosition: hasIcon ? 'above' : 'none',
+      iconSize: 'medium',
+      iconFilled: true,
+      border: 'double-circle'
     }
   ];
 }
 
 // ── LLM Design Generation ──────────────────────────────────────────────────────
+
+const VALID = {
+  composition: ['stacked', 'badge', 'split', 'overlay', 'minimal', 'banner'],
+  textSize: ['small', 'medium', 'large'],
+  textStyle: ['light', 'regular', 'bold', 'heavy'],
+  font: ['sans', 'serif', 'display'],
+  iconPosition: ['above', 'below', 'left', 'right', 'behind', 'none'],
+  iconSize: ['small', 'medium', 'large'],
+  border: ['none', 'underline', 'circle', 'double-circle', 'box', 'dots']
+} as const;
+
+function sanitizeDesign(raw: any, hasIcon: boolean, index: number): SemanticDesign {
+  return {
+    name: String(raw.name || `Design ${index + 1}`),
+    style: String(raw.style || ''),
+    reasoning: String(raw.reasoning || ''),
+    composition: VALID.composition.includes(raw.composition) ? raw.composition : 'stacked',
+    textSize: VALID.textSize.includes(raw.textSize) ? raw.textSize : 'medium',
+    textStyle: VALID.textStyle.includes(raw.textStyle) ? raw.textStyle : 'bold',
+    font: VALID.font.includes(raw.font) ? raw.font : 'sans',
+    uppercase: raw.uppercase !== false,
+    iconPosition: hasIcon
+      ? (VALID.iconPosition.includes(raw.iconPosition) ? raw.iconPosition : 'above')
+      : 'none',
+    iconSize: VALID.iconSize.includes(raw.iconSize) ? raw.iconSize : 'medium',
+    iconFilled: raw.iconFilled !== false,
+    border: VALID.border.includes(raw.border) ? raw.border : 'none'
+  };
+}
 
 export async function generateDesignsFromLLM(
   text: string,
@@ -124,43 +238,46 @@ export async function generateDesignsFromLLM(
   const hasIcon = !!iconId && iconId !== 'none';
   const icon = hasIcon
     ? ICON_LIBRARY.find(i => i.id === iconId) || ICON_LIBRARY.find(i => i.id === 'star')!
-    : ICON_LIBRARY.find(i => i.id === 'star')!;
+    : null;
 
   const prompt = [
-    'You are a graphic design AI. Return ONLY valid JSON — an array of exactly 3 design layout objects.',
-    'Each layout describes how to arrange text and an optional icon on a 400x400px merch print area.',
+    'You are a graphic design AI. Return ONLY valid JSON — an array of exactly 3 design objects.',
     '',
-    'Each layout object MUST have this exact structure:',
+    'Each object describes a merch design using these semantic tokens (pick ONE value per field):',
+    '',
     '{',
-    '  "name": string (short creative name, e.g. "Neon Minimal"),',
+    '  "name": string (creative short name, e.g. "Neon Punch"),',
     '  "style": string (1-line style description),',
-    '  "reasoning": string (why this design works for the request),',
-    '  "text": {',
-    '    "content": string (the text to display),',
-    '    "y": number (vertical position 100-320),',
-    '    "fontSize": number (24-72),',
-    '    "fontWeight": number (400 | 700 | 900),',
-    '    "fontFamily": "sans-serif" | "serif" | "impact",',
-    '    "letterSpacing": number (-2 to 6),',
-    '    "textTransform": "uppercase" | "none"',
-    '  },',
-    hasIcon ? '  "icon": { "x": 200, "y": number (80-300), "scale": number (1-5), "filled": boolean, "opacity": number (0.1-1) },' : '',
-    '  "decorations": array of decoration objects (can be empty). Types:',
-    '    { "type": "line", "x1": number, "y1": number, "x2": number, "y2": number, "strokeWidth": number }',
-    '    { "type": "circle", "cx": number, "cy": number, "r": number, "filled": boolean, "strokeWidth": number, "strokeDasharray"?: string }',
+    '  "reasoning": string (why this works for the request),',
+    '  "composition": "stacked" | "badge" | "split" | "overlay" | "minimal" | "banner",',
+    '  "textSize": "small" | "medium" | "large",',
+    '  "textStyle": "light" | "regular" | "bold" | "heavy",',
+    '  "font": "sans" | "serif" | "display",',
+    '  "uppercase": true | false,',
+    hasIcon ? '  "iconPosition": "above" | "below" | "left" | "right" | "behind",' : '',
+    hasIcon ? '  "iconSize": "small" | "medium" | "large",' : '',
+    hasIcon ? '  "iconFilled": true | false,' : '',
+    '  "border": "none" | "underline" | "circle" | "double-circle" | "box" | "dots"',
     '}',
     '',
-    'RULES:',
-    '- Make the 3 designs VERY different from each other (different compositions, font choices, icon placements).',
-    '- The text content should always be: "' + text + '"',
-    hasIcon ? `- Include an icon in each design. The icon is "${iconId}".` : '- No icon is selected. Do not include icon objects.',
-    vibe ? `- Design vibe: ${vibe}` : '',
-    occasion ? `- Occasion: ${occasion}` : '',
-    '- Think about visual hierarchy, balance, and whitespace.',
-    '- Keep decorations minimal (0-3 per design). They enhance, not overwhelm.',
-    '- Ensure text and icon don\'t overlap.',
+    'Compositions explained:',
+    '- stacked: icon above/below text, centered vertically',
+    '- badge: circular border with icon and text inside',
+    '- split: icon on one side, text on the other',
+    '- overlay: large faded icon behind prominent text',
+    '- minimal: clean text-focused, small icon if any',
+    '- banner: text at top, icon below, like a title card',
     '',
-    'Return ONLY the JSON array. No markdown, no explanation.'
+    'RULES:',
+    '- Make the 3 designs VERY different (different compositions, fonts, borders).',
+    `- The text is: "${text}"`,
+    hasIcon ? `- An icon ("${iconId}") is selected. Choose creative positions for it.` : '- No icon selected. Omit iconPosition/iconSize/iconFilled fields.',
+    vibe ? `- Vibe: ${vibe}` : '',
+    occasion ? `- Occasion: ${occasion}` : '',
+    '- Think about what composition and border style best matches the vibe.',
+    '- "overlay" works great for bold/dramatic vibes. "badge" for retro/classic. "minimal" for clean/modern.',
+    '',
+    'Return ONLY the JSON array.'
   ].filter(Boolean).join('\n');
 
   try {
@@ -169,94 +286,44 @@ export async function generateDesignsFromLLM(
       { responseFormat: 'json' }
     );
 
-    let layouts: DesignLayout[];
+    let designs: any[];
     try {
       const parsed = JSON.parse(raw);
-      layouts = Array.isArray(parsed) ? parsed : parsed.designs || parsed.layouts || [];
+      designs = Array.isArray(parsed) ? parsed : parsed.designs || parsed.layouts || [];
     } catch {
-      // Try to extract array from response
       const match = raw.match(/\[[\s\S]*\]/);
       if (match) {
-        layouts = JSON.parse(match[0]);
+        designs = JSON.parse(match[0]);
       } else {
-        throw new Error('Could not parse design layouts');
+        throw new Error('Could not parse design response');
       }
     }
 
-    if (!Array.isArray(layouts) || layouts.length === 0) {
-      throw new Error('Empty layouts array');
+    if (!Array.isArray(designs) || designs.length === 0) {
+      throw new Error('Empty designs array');
     }
 
-    return layouts.slice(0, 3).map((layout, i) => {
-      // Sanitize/clamp values
-      const safeLayout: DesignLayout = {
-        name: String(layout.name || `Design ${i + 1}`),
-        style: String(layout.style || ''),
-        reasoning: String(layout.reasoning || ''),
-        text: {
-          content: text, // Always use the original text
-          y: clamp(layout.text?.y ?? 200, 80, 350),
-          fontSize: clamp(layout.text?.fontSize ?? 48, 24, 72),
-          fontWeight: [400, 700, 900].includes(layout.text?.fontWeight) ? layout.text.fontWeight : 700,
-          fontFamily: ['sans-serif', 'serif', 'impact'].includes(layout.text?.fontFamily) ? layout.text.fontFamily : 'sans-serif',
-          letterSpacing: clamp(layout.text?.letterSpacing ?? 0, -2, 6),
-          textTransform: layout.text?.textTransform === 'none' ? 'none' : 'uppercase'
-        },
-        icon: hasIcon && layout.icon ? {
-          x: clamp(layout.icon.x ?? 200, 50, 350),
-          y: clamp(layout.icon.y ?? 150, 50, 350),
-          scale: clamp(layout.icon.scale ?? 2, 1, 5),
-          filled: !!layout.icon.filled,
-          opacity: clamp(layout.icon.opacity ?? 1, 0.1, 1)
-        } : undefined,
-        decorations: sanitizeDecorations(layout.decorations)
-      };
-
+    return designs.slice(0, 3).map((d, i) => {
+      const semantic = sanitizeDesign(d, hasIcon, i);
       return {
-        id: String.fromCharCode(65 + i), // A, B, C
-        name: safeLayout.name,
-        style: safeLayout.style,
-        svg: renderLayoutToSVG(safeLayout, icon),
+        id: String.fromCharCode(65 + i),
+        name: semantic.name,
+        style: semantic.style,
+        svg: renderSemanticToSVG(semantic, text, icon),
         score: 90 - i * 5,
-        reasoning: safeLayout.reasoning
+        reasoning: semantic.reasoning
       };
     });
   } catch (err) {
-    console.error('LLM design generation failed, using fallback templates:', err);
-    const layouts = fallbackLayouts(text, hasIcon);
-    return layouts.map((layout, i) => ({
+    console.error('LLM design generation failed, using fallback:', err);
+    const designs = fallbackDesigns(hasIcon);
+    return designs.map((d, i) => ({
       id: String.fromCharCode(65 + i),
-      name: layout.name,
-      style: layout.style,
-      svg: renderLayoutToSVG(layout, icon),
+      name: d.name,
+      style: d.style,
+      svg: renderSemanticToSVG(d, text, icon),
       score: 90 - i * 5,
-      reasoning: layout.reasoning
+      reasoning: d.reasoning
     }));
   }
-}
-
-// ── Utilities ──────────────────────────────────────────────────────────────────
-
-function clamp(value: number, min: number, max: number): number {
-  if (typeof value !== 'number' || isNaN(value)) return (min + max) / 2;
-  return Math.min(max, Math.max(min, value));
-}
-
-function sanitizeDecorations(raw: any[]): Decoration[] {
-  if (!Array.isArray(raw)) return [];
-  return raw.slice(0, 3).filter((d): d is Decoration => {
-    if (!d || typeof d !== 'object') return false;
-    if (d.type === 'line') return typeof d.x1 === 'number';
-    if (d.type === 'circle') return typeof d.cx === 'number';
-    if (d.type === 'arc-text') return typeof d.text === 'string';
-    return false;
-  }).map(d => {
-    if (d.type === 'line') {
-      return { type: 'line' as const, x1: clamp(d.x1, 0, 400), y1: clamp(d.y1, 0, 400), x2: clamp(d.x2, 0, 400), y2: clamp(d.y2, 0, 400), strokeWidth: clamp(d.strokeWidth, 1, 8) };
-    }
-    if (d.type === 'circle') {
-      return { type: 'circle' as const, cx: clamp(d.cx, 0, 400), cy: clamp(d.cy, 0, 400), r: clamp(d.r, 10, 200), filled: !!d.filled, strokeWidth: clamp(d.strokeWidth, 1, 8), strokeDasharray: typeof d.strokeDasharray === 'string' ? d.strokeDasharray : undefined };
-    }
-    return d;
-  });
 }
