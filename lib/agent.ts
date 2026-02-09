@@ -15,6 +15,9 @@ export interface ConversationState {
   icon?: string;
   productColor?: string;
   textColor?: string;
+  alignment?: 'left' | 'center' | 'right';
+  vertical?: 'top' | 'middle' | 'bottom';
+  scale?: 'small' | 'medium' | 'large';
   size?: string;
   quantity?: number;
   messages: Message[];

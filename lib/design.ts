@@ -3,6 +3,7 @@ import { Icon } from './icons';
 export interface DesignVariant {
   id: string;
   name: string;
+  layout: 'text_only' | 'text_icon' | 'icon_only';
   style: string;
   svg: string;
   score: number;
@@ -12,6 +13,39 @@ export interface DesignVariant {
 export interface GeneratedDesigns {
   variants: DesignVariant[];
   recommended: string;
+}
+
+function generateTextOnlySVG(text: string): string {
+  return `
+    <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+      <text x="200" y="210" font-family="'Helvetica Neue', sans-serif" font-size="56" font-weight="700" text-anchor="middle" fill="currentColor" letter-spacing="1">
+        ${text.toUpperCase()}
+      </text>
+    </svg>
+  `;
+}
+
+function generateIconOnlySVG(icon: Icon): string {
+  return `
+    <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+      <g transform="translate(200, 200)">
+        <path d="${icon.path}" fill="currentColor" transform="translate(-12, -12) scale(4)" />
+      </g>
+    </svg>
+  `;
+}
+
+function generateTextIconSVG(text: string, icon: Icon): string {
+  return `
+    <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+      <g transform="translate(200, 140)">
+        <path d="${icon.path}" fill="currentColor" transform="translate(-12, -12) scale(3.2)" />
+      </g>
+      <text x="200" y="285" font-family="'Helvetica Neue', sans-serif" font-size="52" font-weight="700" text-anchor="middle" fill="currentColor" letter-spacing="1">
+        ${text.toUpperCase()}
+      </text>
+    </svg>
+  `;
 }
 
 function generateMinimalSVG(text: string, icon: Icon): string {
@@ -59,6 +93,14 @@ function generateRetroSVG(text: string, icon: Icon): string {
   `;
 }
 
+function pickTemplateIndex(seed: string, count: number) {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash = (hash * 31 + seed.charCodeAt(i)) % 100000;
+  }
+  return Math.abs(hash) % count;
+}
+
 export function generateVariants(
   text: string,
   icon: Icon,
@@ -69,6 +111,7 @@ export function generateVariants(
     {
       id: 'A',
       name: 'Minimal',
+      layout: 'text_icon',
       style: 'Text-focused with subtle accent',
       svg: generateMinimalSVG(text, icon),
       score: vibe === 'minimal' ? 95 : 75,
@@ -77,6 +120,7 @@ export function generateVariants(
     {
       id: 'B',
       name: 'Bold',
+      layout: 'text_icon',
       style: 'Statement piece with large elements',
       svg: generateBoldSVG(text, icon),
       score: vibe === 'bold' || vibe === 'sporty' ? 95 : 70,
@@ -85,6 +129,7 @@ export function generateVariants(
     {
       id: 'C',
       name: 'Retro Badge',
+      layout: 'text_icon',
       style: 'Vintage-inspired composition',
       svg: generateRetroSVG(text, icon),
       score: vibe === 'retro' || vibe === 'cute' ? 95 : 80,
@@ -99,6 +144,60 @@ export function generateVariants(
     variants,
     recommended: variants[0].id
   };
+}
+
+export function generateDefaultVariants(text: string, icon: Icon): GeneratedDesigns {
+  const safeText = text || '';
+  const seed = `${safeText}|${icon.id}`;
+  const templates = [
+    { name: 'Minimal', svg: generateMinimalSVG(safeText, icon) },
+    { name: 'Bold', svg: generateBoldSVG(safeText, icon) },
+    { name: 'Retro Badge', svg: generateRetroSVG(safeText, icon) }
+  ];
+  const templateIndex = pickTemplateIndex(seed, templates.length);
+  const aiTemplate = templates[templateIndex];
+
+  const variants: DesignVariant[] = [
+    {
+      id: 'text-only',
+      name: 'Text Only',
+      layout: 'text_only',
+      style: 'Clean text lockup',
+      svg: generateTextOnlySVG(safeText),
+      score: 90,
+      reasoning: 'Simple, clean typography-first layout.'
+    },
+    {
+      id: 'text-icon',
+      name: 'Text + Icon',
+      layout: 'text_icon',
+      style: 'Balanced text and icon',
+      svg: generateTextIconSVG(safeText, icon),
+      score: 95,
+      reasoning: 'Balanced text/icon composition with strong hierarchy.'
+    },
+    {
+      id: 'ai-suggested',
+      name: 'AI Suggested',
+      layout: 'text_icon',
+      style: `Suggested ${aiTemplate.name} layout`,
+      svg: aiTemplate.svg,
+      score: 88,
+      reasoning: 'Auto-picked layout for a bold, standout look.'
+    },
+    {
+      id: 'icon-only',
+      name: 'Icon Only',
+      layout: 'icon_only',
+      style: 'Symbol-led mark',
+      svg: generateIconOnlySVG(icon),
+      score: 85,
+      reasoning: 'Bold, minimal icon-only mark.'
+    }
+  ];
+
+  const recommended = safeText ? 'text-icon' : 'icon-only';
+  return { variants, recommended };
 }
 
 export function getContrastColor(bgHex: string): string {

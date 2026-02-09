@@ -30,8 +30,12 @@ export type CustomizationUpdates = {
   vibe?: (typeof VIBES)[number];
   text?: string;
   iconId?: string;
+  layout?: 'text_only' | 'text_icon' | 'icon_only';
   productColor?: string;
   textColor?: string;
+  alignment?: 'left' | 'center' | 'right';
+  vertical?: 'top' | 'middle' | 'bottom';
+  scale?: 'small' | 'medium' | 'large';
   color?: string;
   size?: string;
   budgetMax?: number;
@@ -76,6 +80,22 @@ export function validateCustomizationUpdates(raw: any): CustomizationUpdates {
 
   if (typeof raw.iconId === 'string' && ICON_LIBRARY.find(i => i.id === raw.iconId)) {
     updates.iconId = raw.iconId;
+  }
+
+  if (typeof raw.layout === 'string' && ['text_only', 'text_icon', 'icon_only'].includes(raw.layout)) {
+    updates.layout = raw.layout as CustomizationUpdates['layout'];
+  }
+
+  if (typeof raw.alignment === 'string' && ['left', 'center', 'right'].includes(raw.alignment)) {
+    updates.alignment = raw.alignment as CustomizationUpdates['alignment'];
+  }
+
+  if (typeof raw.vertical === 'string' && ['top', 'middle', 'bottom'].includes(raw.vertical)) {
+    updates.vertical = raw.vertical as CustomizationUpdates['vertical'];
+  }
+
+  if (typeof raw.scale === 'string' && ['small', 'medium', 'large'].includes(raw.scale)) {
+    updates.scale = raw.scale as CustomizationUpdates['scale'];
   }
 
   const allowedColors = Object.keys(TEXT_COLOR_OPTIONS);

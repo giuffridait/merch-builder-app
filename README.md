@@ -13,7 +13,7 @@ MerchForge is a Next.js app that pairs a conversational assistant with a product
 ### Customization Flow (Agentic)
 - Constraint-based readiness — no rigid stage machine; users can specify everything in any order or all at once (e.g., "navy tee with 'Dream Big' and a star")
 - Real SSE streaming from LLM providers (Ollama, Groq, OpenAI-compatible)
-- LLM-powered design generation — the AI describes design layouts (text positioning, icon placement, decorations) as structured JSON, which is rendered into SVG
+- LLM-powered design generation — the AI describes design layouts using semantic tokens (composition, font, icon position, border style), which are rendered into SVG
 - Deterministic keyword fallback ensures the app works even when the LLM is unavailable
 - Live preview with color-specific product images
 - Text color selection + layering controls (scale/position)
@@ -32,7 +32,7 @@ MerchForge is a Next.js app that pairs a conversational assistant with a product
 - **Structured outputs** — Uses native JSON mode (Ollama `format: "json"`, OpenAI/Groq `response_format`) for reliable structured extraction.
 
 ### Design Generation (`lib/design-engine.ts`)
-- **LLM as design collaborator** — When the user provides enough context (product + text/icon), the LLM is asked to describe 3 distinct design layouts as structured JSON: text position, font choice, icon placement/scale, decorative elements (circles, lines, arcs). A renderer turns these descriptions into SVG.
+- **LLM as design collaborator** — When the user provides enough context (product + text/icon), the LLM describes 3 distinct design layouts using semantic tokens: composition type (stacked/badge/split/overlay/minimal/banner), text size, font, icon position, and border style. A deterministic renderer maps these tokens to SVG.
 - **Creative variation** — The LLM is prompted to make designs "very different from each other" and considers the user's vibe and occasion.
 - **Graceful fallback** — If the LLM fails, hardcoded template layouts (Minimal, Bold, Retro Badge) are used instead.
 
@@ -156,6 +156,7 @@ merch-builder-app/
 │   ├── validate-inventory.js          # Inventory validation
 │   └── smoke-discover.js             # API smoke tests
 ├── public/
+│   └── llms.txt                       # LLM crawlability file
 ├── middleware.ts                      # Basic auth (optional)
 ├── package.json
 ├── next.config.js
@@ -216,7 +217,7 @@ Edit `lib/icons.ts` and add keyword mappings.
 - Discovery: `app/api/discover/route.ts`
 
 ### Add New Design Variants
-Edit `lib/design-engine.ts` to modify the LLM prompt or add fallback templates. The SVG renderer (`renderLayoutToSVG`) supports text, icons, lines, circles, and arc-text decorations.
+Edit `lib/design-engine.ts` to modify the LLM prompt or add fallback templates. The SVG renderer supports text, icons, and decorative elements (circles, lines, boxes, dots).
 
 ### Product Preview Images
 Color-specific preview images are mapped in `lib/catalog.ts` under `imageUrlByColor`.
