@@ -349,6 +349,15 @@ export default function DiscoverPage() {
     return ['Under €30', 'Organic cotton', 'Need 20 pieces', 'White tote'];
   };
 
+  const discoveryControls = [
+    { label: 'Budget', prompt: 'Under €40' },
+    { label: 'Color', prompt: 'Black' },
+    { label: 'Material', prompt: 'Organic cotton' },
+    { label: 'Lead time', prompt: 'Under 10 days' },
+    { label: 'Qty', prompt: 'Need 20 pieces' },
+    { label: 'Eco', prompt: 'Sustainable' }
+  ];
+
   const buildResults = (
     base: Partial<DiscoverConstraints>,
     options?: { relaxColor?: boolean; relaxMaterials?: boolean; relaxLeadTime?: boolean }
@@ -486,6 +495,24 @@ export default function DiscoverPage() {
                   Using fallback mode (AI unavailable). Responses may be less flexible.
                 </div>
               )}
+
+              <div className="mt-3">
+                <div className="text-xs text-[#6b6b6b] mb-2">Discovery controls (type or tap):</div>
+                <div className="flex flex-wrap gap-2">
+                  {discoveryControls.map((control) => (
+                    <button
+                      key={control.label}
+                      onClick={() => {
+                        setInput(control.prompt);
+                        setTimeout(() => inputRef.current?.focus(), 100);
+                      }}
+                      className="px-2.5 py-1 text-xs bg-[#ffffff] hover:bg-[#f7f7f7] border border-[#e4e4e4] rounded-full transition-all"
+                    >
+                      {control.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
               <div className="mt-3 flex flex-wrap gap-2">
                 {quickSuggestions().map(action => (
