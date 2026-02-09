@@ -31,7 +31,7 @@ export function useCreateFlow() {
       {
         id: '1',
         role: 'assistant',
-        content: "What would you like to make? A tee, hoodie, or tote? You can tell me everything at once — like 'navy tee with Dream Big and a star'.",
+        content: "Hey! I can help you design custom merch. Tell me what you'd like — a tee, hoodie, or tote.\n\nYou can say everything at once, like \"navy tee with 'Dream Big' and a star\", or go step by step. Once your design is ready, you can:\n\n• Pick from multiple design layouts\n• Change product & text colors\n• Add or swap icons\n• Scale and reposition your design\n• Choose size & quantity\n\nWhat would you like to make?",
         timestamp: Date.now()
       }
     ]
