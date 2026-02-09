@@ -30,7 +30,7 @@ function buildSystemPrompt(state: ConversationState): string {
 
   return [
     'You are a friendly merch design assistant helping users create custom merch. Return ONLY valid JSON.',
-    '{ "assistant": "<your conversational reply to the user — a full, friendly sentence>", "updates": { "productId"?: string, "text"?: string, "iconId"?: string, "productColor"?: string, "textColor"?: string, "size"?: string, "quantity"?: number, "occasion"?: string, "vibe"?: string, "action"?: "add_to_cart" | "remove_icon" } }',
+    '{ "assistant": "<your conversational reply to the user — a full, friendly sentence>", "updates": { "productId"?: string, "text"?: string, "iconId"?: string, "productColor"?: string, "textColor"?: string, "size"?: string, "quantity"?: number, "occasion"?: string, "vibe"?: string, "alignment"?: "left" | "center" | "right", "vertical"?: "top" | "middle" | "bottom", "scale"?: "small" | "medium" | "large", "action"?: "add_to_cart" | "remove_icon" } }',
     '',
     'The "assistant" value MUST be a natural, conversational reply (e.g., "Great choice! I\'ve set up a navy tee for you."). It must NEVER be a role label like "Merch Design Assistant" or a placeholder.',
     '',
@@ -47,6 +47,8 @@ function buildSystemPrompt(state: ConversationState): string {
     '- Set textColor for the design/icon color (e.g., "white star", "red text").',
     '- Set text or iconId if mentioned.',
     '- If user asks to remove the icon, set action: "remove_icon" and iconId: "none".',
+    '- If user asks to move design up/down, set vertical: "top"/"middle"/"bottom". If left/right, set alignment: "left"/"center"/"right".',
+    '- If user asks to make design bigger/smaller, set scale: "small"/"medium"/"large".',
     '- Set action: "add_to_cart" if user is ready to buy.',
     missing.length > 0
       ? `- The user still needs to provide: ${missing.join(', ')}. Guide them toward filling these.`
@@ -127,6 +129,18 @@ function parseKeywordUpdates(message: string): Record<string, any> {
   const quoteMatch = message.match(/"([^"]+)"/) || message.match(/'([^']+)'/);
   if (quoteMatch?.[1]) updates.text = quoteMatch[1];
 
+  // Position / scale keywords
+  if (/\bmove\s*(it\s*)?up\b|\bhigher\b|\b(to\s*the\s*)?top\b/.test(text)) updates.vertical = 'top';
+  else if (/\bmove\s*(it\s*)?down\b|\blower\b|\b(to\s*the\s*)?bottom\b/.test(text)) updates.vertical = 'bottom';
+  else if (/\bcenter\b|\bmiddle\b/.test(text) && /vertical|up|down/.test(text)) updates.vertical = 'middle';
+
+  if (/\bmove\s*(it\s*)?left\b|\b(to\s*the\s*)?left\b/.test(text)) updates.alignment = 'left';
+  else if (/\bmove\s*(it\s*)?right\b|\b(to\s*the\s*)?right\b/.test(text)) updates.alignment = 'right';
+  else if (/\bcenter\b|\bmiddle\b/.test(text) && !/vertical|up|down/.test(text)) updates.alignment = 'center';
+
+  if (/\bbigger\b|\blarger\b|\bscale\s*up\b|\bincrease\s*size\b/.test(text)) updates.scale = 'large';
+  else if (/\bsmaller\b|\btinier\b|\bscale\s*down\b|\bdecrease\s*size\b|\bshrink\b/.test(text)) updates.scale = 'small';
+
   return updates;
 }
 
@@ -149,6 +163,9 @@ function normalizeUpdates(raw: Record<string, any>): Partial<ConversationState> 
   }
   if (validated.productColor) updates.productColor = validated.productColor;
   if (validated.textColor) updates.textColor = validated.textColor;
+  if (validated.alignment) updates.alignment = validated.alignment;
+  if (validated.vertical) updates.vertical = validated.vertical;
+  if (validated.scale) updates.scale = validated.scale;
   if (validated.size) updates.size = validated.size;
   if (validated.quantity != null) updates.quantity = validated.quantity;
   if (validated.action) (updates as any).action = validated.action;

@@ -275,6 +275,20 @@ export function useCreateFlow() {
                 }
                 if (updates.quantity) setQuantity(updates.quantity);
 
+                // Map semantic position/scale to design controls
+                if (updates.alignment) {
+                  const xMap: Record<string, number> = { left: -60, center: 0, right: 60 };
+                  setDesignOffset(prev => ({ ...prev, x: xMap[updates.alignment] ?? prev.x }));
+                }
+                if (updates.vertical) {
+                  const yMap: Record<string, number> = { top: -60, middle: 0, bottom: 60 };
+                  setDesignOffset(prev => ({ ...prev, y: yMap[updates.vertical] ?? prev.y }));
+                }
+                if (updates.scale) {
+                  const scaleMap: Record<string, number> = { small: 0.7, medium: 1, large: 1.4 };
+                  setDesignScale(scaleMap[updates.scale] ?? 1);
+                }
+
                 if (updates.action === 'add_to_cart') {
                   handleAddToCart();
                   setIsTyping(false);
