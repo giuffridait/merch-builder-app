@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { PRODUCTS, PRINT_FEE, Product } from '@/lib/catalog';
 import { ICON_LIBRARY } from '@/lib/icons';
-import { getContrastColor, DesignVariant } from '@/lib/design';
+import { getContrastColor, generateDefaultVariants, DesignVariant } from '@/lib/design';
 import { addToCart, getCart } from '@/lib/cart';
 import { TEXT_COLOR_OPTIONS } from '@/lib/customization-constraints';
 import {
@@ -129,6 +129,15 @@ export function useCreateFlow() {
     if (lastGeneratedRef.current === key) return;
     lastGeneratedRef.current = key;
 
+    // Immediately show the 4 default variants (text-only, text+icon, AI suggested, icon-only)
+    const icon = ICON_LIBRARY.find(i => i.id === state.icon) || ICON_LIBRARY.find(i => i.id === 'star') || ICON_LIBRARY[0];
+    const defaults = generateDefaultVariants(text, icon);
+    setDesigns(defaults.variants);
+    if (!selectedVariant || !defaults.variants.find(v => v.id === selectedVariant)) {
+      setSelectedVariant(defaults.recommended);
+    }
+
+    // Then try LLM-powered designs in the background
     let cancelled = false;
     setDesignsLoading(true);
 
@@ -146,15 +155,17 @@ export function useCreateFlow() {
       .then(data => {
         if (cancelled) return;
         if (data.variants && data.variants.length > 0) {
-          setDesigns(data.variants);
-          if (!selectedVariant || !data.variants.find((v: DesignVariant) => v.id === selectedVariant)) {
-            setSelectedVariant(data.recommended || data.variants[0].id);
-          }
+          // Merge: keep default variants, add LLM variants
+          setDesigns(prev => {
+            const defaultIds = new Set((prev || []).map(v => v.id));
+            const llmVariants = data.variants.filter((v: DesignVariant) => !defaultIds.has(v.id));
+            return [...(prev || []), ...llmVariants];
+          });
         }
       })
       .catch(err => {
         if (cancelled) return;
-        console.error('Design generation failed:', err);
+        console.error('Design generation failed, using defaults:', err);
       })
       .finally(() => {
         if (!cancelled) setDesignsLoading(false);
@@ -180,17 +191,7 @@ export function useCreateFlow() {
     </svg>
   `;
 
-  const textOnlyVariant: DesignVariant = {
-    id: 'text-only',
-    name: 'Text Only',
-    layout: 'text_only',
-    style: 'Modern & Clean',
-    svg: state.text ? buildTextOnlySVG(state.text) : '',
-    score: 80,
-    reasoning: 'Simple and effective.'
-  };
-
-  const allDesigns = designs ? [textOnlyVariant, ...designs] : null;
+  const allDesigns = designs;
 
   // ── Send Message (streaming) ────────────────────────────────────────────────
 
@@ -327,7 +328,7 @@ export function useCreateFlow() {
 
     const fallbackVariantId = designs?.[0]?.id || 'text-only';
     const activeVariantId = selectedVariant || fallbackVariantId;
-    const variant = (designs || []).find(v => v.id === activeVariantId) || (activeVariantId === 'text-only' ? textOnlyVariant : undefined);
+    const variant = (designs || []).find(v => v.id === activeVariantId);
     const designSvg = variant?.svg || buildTextOnlySVG(state.text);
     const itemPrice = state.product.basePrice + PRINT_FEE;
     const isTextOnly = activeVariantId === 'text-only';
@@ -396,7 +397,6 @@ export function useCreateFlow() {
     allDesigns,
     selectedVariant,
     setSelectedVariant,
-    textOnlyVariant,
     buildTextOnlySVG,
     // Product options
     selectedColor,
