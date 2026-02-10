@@ -230,7 +230,7 @@ export function useCreateFlow() {
 
     // Local cart intent shortcut
     const isAddToCartIntent = /add to cart|checkout|ready to buy|buy now/i.test(userMessage);
-    if (isAddToCartIntent && state.product && (state.text || state.icon) && selectedColor) {
+    if (isAddToCartIntent && state.product && (state.text || state.icon)) {
       handleAddToCart();
       setIsTyping(false);
       return;
@@ -356,29 +356,36 @@ export function useCreateFlow() {
   // ── Add to Cart ─────────────────────────────────────────────────────────────
 
   const handleAddToCart = useCallback(() => {
-    if (!state.product) return;
-    if (!selectedColor || !state.text) {
-      addMessage('assistant', 'Add a short text and choose a product color to add this to cart.');
+    if (!state.product) {
+      addMessage('assistant', 'Pick a product first — tee, hoodie, or tote.');
       return;
     }
+    if (!state.text && !state.icon) {
+      addMessage('assistant', 'Add some text or an icon to your design first.');
+      return;
+    }
+
+    // Auto-pick color if not yet selected
+    const color = selectedColor || state.product.colors[0];
+    if (!selectedColor) setSelectedColor(color);
 
     const fallbackVariantId = designs?.[0]?.id || 'text-only';
     const activeVariantId = selectedVariant || fallbackVariantId;
     const variant = (designs || []).find(v => v.id === activeVariantId);
-    const designSvg = variant?.svg || buildTextOnlySVG(state.text);
+    const designSvg = variant?.svg || (state.text ? buildTextOnlySVG(state.text) : '');
     const itemPrice = state.product.basePrice + PRINT_FEE;
     const isTextOnly = activeVariantId === 'text-only';
 
     const newCart = addToCart({
       productId: state.product.id,
       productName: state.product.name,
-      color: selectedColor,
+      color: color,
       textColor: textColor || undefined,
-      size: selectedSize,
+      size: selectedSize || state.product.sizes?.[2] || state.product.sizes?.[0] || null,
       quantity,
       variant: activeVariantId,
       designSVG: designSvg,
-      text: state.text!,
+      text: state.text || '',
       icon: isTextOnly ? 'none' : (state.icon || 'none'),
       price: itemPrice,
       total: itemPrice * quantity,
