@@ -312,14 +312,12 @@ export default function DiscoverPage() {
     const colors = inventoryItem.attributes.variants.colors || [];
     const requestedColor = selectedColorById[item.item_id] || item.matchedColor;
     const selectedColorName = resolveColorName(colors, requestedColor) || requestedColor;
-    const selectedColor = colors.find(c => c.name === selectedColorName);
-    if (!selectedColor && colors.length > 0) return false;
+    const selectedColor = colors.find(c => c.name === selectedColorName) || (colors.length > 0 ? colors[0] : null);
 
     const sizes = inventoryItem.attributes.variants.sizes || [];
     const selectedSize = sizes.length > 0
       ? (selectedSizeById[item.item_id] || (sizes.includes('M') ? 'M' : sizes[0]))
       : null;
-    if (sizes.length > 0 && !selectedSize) return false;
 
     const price = inventoryItem.price.amount;
     addToCart({
