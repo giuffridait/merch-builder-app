@@ -29,14 +29,13 @@ export function canPreview(state: ConversationState): boolean {
 }
 
 export function canAddToCart(state: ConversationState): boolean {
-  return !!state.product && !!state.productColor && (!!state.text || !!state.icon);
+  return !!state.product && (!!state.text || !!state.icon);
 }
 
 export function getMissingFields(state: ConversationState): string[] {
   const missing: string[] = [];
   if (!state.product) missing.push('product');
   if (!state.text && !state.icon) missing.push('text or icon');
-  if (!state.productColor) missing.push('color');
   return missing;
 }
 
