@@ -105,6 +105,29 @@ export function useCreateFlow() {
     }
   }, [state.textColor]);
 
+  // ── Sync position/scale from state ─────────────────────────────────────────
+
+  useEffect(() => {
+    if (state.alignment) {
+      const xMap: Record<string, number> = { left: -60, center: 0, right: 60 };
+      setDesignOffset(prev => ({ ...prev, x: xMap[state.alignment!] ?? prev.x }));
+    }
+  }, [state.alignment]);
+
+  useEffect(() => {
+    if (state.vertical) {
+      const yMap: Record<string, number> = { top: -60, middle: 0, bottom: 60 };
+      setDesignOffset(prev => ({ ...prev, y: yMap[state.vertical!] ?? prev.y }));
+    }
+  }, [state.vertical]);
+
+  useEffect(() => {
+    if (state.scale) {
+      const scaleMap: Record<string, number> = { small: 0.7, medium: 1, large: 1.4 };
+      setDesignScale(scaleMap[state.scale] ?? 1);
+    }
+  }, [state.scale]);
+
   // ── Auto text color contrast ────────────────────────────────────────────────
 
   useEffect(() => {
@@ -259,36 +282,49 @@ export function useCreateFlow() {
                   if (newProduct) updates.product = newProduct;
                 }
 
-                setState(prev => ({ ...prev, ...updates }));
+                // Use functional setState to get the latest state
+                setState(prev => {
+                  const merged = { ...prev, ...updates };
 
-                if (updates.productColor) {
-                  const match = state.product?.colors.find(
-                    (c: { name: string; hex: string }) => c.name.toLowerCase() === updates.productColor.toLowerCase()
-                  );
-                  if (match) setSelectedColor(match);
-                }
-                if (updates.textColor) {
-                  const map = TEXT_COLOR_OPTIONS[updates.textColor.toLowerCase()];
-                  if (map) { setTextColor(map); setTextColorAuto(false); }
-                }
-                if (updates.size && state.product?.sizes?.includes(updates.size)) {
-                  setSelectedSize(updates.size);
-                }
-                if (updates.quantity) setQuantity(updates.quantity);
+                  // Sync product color
+                  const activeProduct = merged.product;
+                  if (updates.productColor && activeProduct) {
+                    const match = activeProduct.colors.find(
+                      (c: { name: string; hex: string }) => c.name.toLowerCase() === updates.productColor.toLowerCase()
+                    );
+                    if (match) setSelectedColor(match);
+                  }
 
-                // Map semantic position/scale to design controls
-                if (updates.alignment) {
-                  const xMap: Record<string, number> = { left: -60, center: 0, right: 60 };
-                  setDesignOffset(prev => ({ ...prev, x: xMap[updates.alignment] ?? prev.x }));
-                }
-                if (updates.vertical) {
-                  const yMap: Record<string, number> = { top: -60, middle: 0, bottom: 60 };
-                  setDesignOffset(prev => ({ ...prev, y: yMap[updates.vertical] ?? prev.y }));
-                }
-                if (updates.scale) {
-                  const scaleMap: Record<string, number> = { small: 0.7, medium: 1, large: 1.4 };
-                  setDesignScale(scaleMap[updates.scale] ?? 1);
-                }
+                  // Sync text color
+                  if (updates.textColor) {
+                    const map = TEXT_COLOR_OPTIONS[updates.textColor.toLowerCase()];
+                    if (map) { setTextColor(map); setTextColorAuto(false); }
+                  }
+
+                  // Sync size
+                  if (updates.size && activeProduct?.sizes?.includes(updates.size)) {
+                    setSelectedSize(updates.size);
+                  }
+
+                  // Sync quantity
+                  if (updates.quantity) setQuantity(updates.quantity);
+
+                  // Map semantic position/scale to design controls
+                  if (updates.alignment) {
+                    const xMap: Record<string, number> = { left: -60, center: 0, right: 60 };
+                    setDesignOffset(prev => ({ ...prev, x: xMap[updates.alignment] ?? prev.x }));
+                  }
+                  if (updates.vertical) {
+                    const yMap: Record<string, number> = { top: -60, middle: 0, bottom: 60 };
+                    setDesignOffset(prev => ({ ...prev, y: yMap[updates.vertical] ?? prev.y }));
+                  }
+                  if (updates.scale) {
+                    const scaleMap: Record<string, number> = { small: 0.7, medium: 1, large: 1.4 };
+                    setDesignScale(scaleMap[updates.scale] ?? 1);
+                  }
+
+                  return merged;
+                });
 
                 if (updates.action === 'add_to_cart') {
                   handleAddToCart();
