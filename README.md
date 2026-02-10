@@ -9,12 +9,15 @@ MerchForge is a Next.js app that pairs a conversational assistant with a product
 - Ranked recommendations with clear rationale
 - Strict constraint handling (no hallucinated colors/materials/sizes)
 - Cart-ready selection
+- Progressive constraint relaxation if no strict matches (color → material → lead time)
 
-### Customization Flow (Agentic)
-- Constraint-based readiness — no rigid stage machine; users can specify everything in any order or all at once (e.g., "navy tee with 'Dream Big' and a star")
-- Real SSE streaming from LLM providers (Ollama, Groq, OpenAI-compatible)
-- LLM-powered design generation — the AI describes design layouts using semantic tokens (composition, font, icon position, border style), which are rendered into SVG
-- Deterministic keyword fallback ensures the app works even when the LLM is unavailable
+### Customization Flow
+- Constraint-based readiness — users can specify everything in any order or all at once (e.g., "navy tee with 'Dream Big' and a star")
+- Streaming LLM responses (provider-dependent)
+- LLM-powered design generation using semantic layout tokens rendered into SVG
+- Deterministic keyword fallback for robustness
+- Text-only or icon-based designs (icon optional)
+- 3 SVG design variants with a recommended pick
 - Live preview with color-specific product images
 - Text color selection + layering controls (scale/position)
 - Cart-ready configuration
@@ -80,6 +83,11 @@ GROQ_MODEL=llama-3.3-70b-versatile
 # Optional basic auth
 BASIC_AUTH_USER=...
 BASIC_AUTH_PASS=...
+
+# Optional Langfuse tracing (server-side)
+LANGFUSE_PUBLIC_KEY=...
+LANGFUSE_SECRET_KEY=...
+LANGFUSE_HOST=https://cloud.langfuse.com
 ```
 
 Notes:
@@ -91,6 +99,8 @@ Notes:
 ```bash
 npm run test:inventory
 npm run test:smoke
+npm run test:ucp
+npm run test:acp-images
 ```
 
 ## Deploy to Vercel
@@ -117,7 +127,7 @@ merch-builder-app/
 │   │   ├── page.tsx                    # Server wrapper
 │   │   ├── CreatePageClient.tsx        # Slim orchestrator
 │   │   ├── hooks/
-│   │   │   └── useCreateFlow.ts        # All client state + LLM interaction
+│   │   │   └── useCreateFlow.ts        # Client state + LLM interaction
 │   │   └── components/
 │   │       ├── ChatPanel.tsx           # Messages, input, suggestions
 │   │       ├── PreviewPanel.tsx        # Product image + design overlay
@@ -130,25 +140,30 @@ merch-builder-app/
 │   ├── preparedness/
 │   │   └── page.jsx                    # ACP/UCP readiness
 │   ├── api/
-│   │   ├── chat/route.ts              # Customization assistant (thin wrapper)
-│   │   ├── create/route.ts            # Streaming customization (thin wrapper)
-│   │   ├── designs/route.ts           # LLM-powered design generation
-│   │   └── discover/route.ts          # Inventory assistant
-│   ├── actions.ts                      # Server Actions
-│   ├── layout.tsx                      # Root layout
-│   ├── page.tsx                        # Home
-│   └── globals.css                     # Global styles
+│   │   ├── chat/route.ts           # Customization assistant (streaming)
+│   │   ├── create/route.ts         # Legacy/customization wrapper
+│   │   ├── designs/route.ts        # LLM-powered design generation
+│   │   ├── discover/route.ts       # Inventory assistant
+│   │   ├── catalog/search/route.ts # ACP catalog search
+│   │   ├── offer/route.ts          # ACP offer creation
+│   │   ├── commit/route.ts         # ACP commit
+│   │   └── order/[id]/route.ts     # ACP order lookup
+│   ├── actions.ts                  # Legacy Server Actions (Agentic Chat)
+│   ├── layout.tsx                  # Root layout
+│   ├── page.tsx                    # Home
+│   └── globals.css                 # Global styles
 ├── lib/
-│   ├── conversation-engine.ts          # Consolidated LLM logic (prompt, fallback, streaming)
-│   ├── design-engine.ts               # LLM-powered design generation + SVG renderer
-│   ├── llm.ts                         # Multi-provider LLM abstraction (chat + streaming)
-│   ├── agent.ts                       # ConversationState + readiness predicates
-│   ├── catalog.ts                     # Product catalog
-│   ├── icons.ts                       # Icon library + keyword matching
-│   ├── design.ts                      # SVG variant templates (fallback)
-│   ├── cart.ts                        # LocalStorage cart management
-│   ├── discover.ts                    # Discovery constraint parsing + ranking
-│   └── customization-constraints.ts   # Validation + allowed values
+│   ├── conversation-engine.ts      # Consolidated LLM logic (prompt, fallback, streaming)
+│   ├── design-engine.ts            # LLM-powered design generation + SVG renderer
+│   ├── llm.ts                      # Multi-provider LLM abstraction (chat + streaming)
+│   ├── langfuse.ts                 # Optional server-side tracing
+│   ├── agent.ts                    # ConversationState + readiness predicates
+│   ├── catalog.ts                  # Product catalog
+│   ├── icons.ts                    # Icon library + keyword matching
+│   ├── design.ts                   # SVG variant templates (fallback)
+│   ├── cart.ts                     # LocalStorage cart management
+│   ├── discover.ts                 # Discovery constraint parsing + ranking
+│   └── customization-constraints.ts # Validation + allowed values
 ├── data/
 │   ├── inventory.acp.json             # Inventory schema
 │   └── ucp-capabilities.json          # Capability flags
@@ -181,6 +196,11 @@ AI: "Here are 2 options for black hoodies under €100. Top pick: Premium Hoodie
 4. **Product selection** — present top pick + rationale
 5. **Cart-ready output** — price + delivery estimate
 
+### Ranking & Constraint Relaxation (Discovery)
+- Strict filter first (category, price, lead time, material, color).
+- If no results, relax constraints in order: **color → material → lead time**.
+- Optional LLM selection can re-order results, but cannot invent inventory.
+
 ### Example: Customization
 
 ```
@@ -189,10 +209,11 @@ AI: "I've set up a navy Classic Tee with 'Dream Big' and a star. Here are 3 desi
 ```
 
 ### Agentic Flow (Customization)
-- **Constraint-based progression** — readiness predicates (`canPreview`, `canAddToCart`) replace the old rigid stage machine. The UI reactively shows design variants when enough fields are filled.
-- **Multi-field updates in a single turn** (e.g., product + color + text + icon all at once).
-- **LLM-generated designs** — when preview-ready, the AI proposes 3 distinct SVG layouts with different compositions, fonts, and decorative elements.
-- **Deterministic keyword fallback** — regex-based parsing always runs alongside the LLM for robustness.
+- **Constraint-based progression** — readiness predicates (`canPreview`, `canAddToCart`) replace a rigid stage machine.
+- **Multi-field updates in a single turn** (e.g., product + color + text + icon).
+- **LLM-generated designs** — when preview-ready, the AI proposes 3 distinct SVG layouts.
+- **Deterministic keyword fallback** — regex-based parsing runs alongside the LLM.
+- **Streaming responses** when the provider supports it.
 
 Limitations:
 - No external tool use (no real-time inventory APIs).
