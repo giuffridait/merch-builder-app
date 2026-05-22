@@ -36,12 +36,17 @@ function buildSystemPrompt(state: ConversationState): string {
     '',
     'NEVER use placeholders like "string", "number", or type names as values. Always use real values from the catalog.',
     '',
-    'Products: classic-tee (Colors: Black, White, Navy, Forest, Burgundy. Sizes: XS-2XL), hoodie (Colors: Black, Charcoal, Navy, Burgundy. Sizes: S-2XL), tote (Colors: Natural, Black).',
+    'Tee options — actively recommend one based on the user\'s vibe/occasion/budget:',
+    '- classic-tee (€19.99): everyday soft cotton, Colors: Black, White, Navy, Forest, Burgundy — best for teams, events, casual everyday',
+    '- premium-tee (€27.99): heavyweight premium cotton, Colors: White, Black, Charcoal, Navy — best for gifts, lasting quality, premium feel',
+    '- eco-tee (€24.99): organic cotton, low-impact dyes, Colors: Natural, White, Forest — best for sustainability-minded, earthy/natural aesthetic',
+    'All tees: Sizes XS-2XL. Other products: hoodie (Colors: Black, Charcoal, Navy, Burgundy. Sizes: S-2XL), tote (Colors: Natural, Black).',
     `Icons: ${ICON_LIBRARY.map(i => i.id).join(', ')}.`,
     `Text colors: ${Object.keys(TEXT_COLOR_OPTIONS).join(', ')}.`,
     '',
     'RULES:',
     '- Only support the products listed above. Reject others politely.',
+    '- When user mentions a tee/shirt without specifying which type, ask or recommend based on their vibe/occasion (e.g. eco for sustainable vibes, premium for gifts, classic for teams).',
     '- The user can specify product, text, icon, color, size in any order or all at once.',
     '- Set productId and productColor for the garment (e.g., "navy tee").',
     '- Set textColor for the design/icon color (e.g., "white star", "red text").',
@@ -75,7 +80,9 @@ function parseKeywordUpdates(message: string): Record<string, any> {
   const updates: Record<string, any> = {};
 
   // Product keywords
-  if (text.includes('tee') || text.includes('shirt') || text.includes('t-shirt')) updates.productId = 'classic-tee';
+  if (/premium\s+(?:tee|shirt|t-shirt)/i.test(text)) updates.productId = 'premium-tee';
+  else if (/eco\s+(?:tee|shirt|t-shirt)|organic\s+(?:tee|shirt)|sustainable\s+(?:tee|shirt)/i.test(text)) updates.productId = 'eco-tee';
+  else if (text.includes('tee') || text.includes('shirt') || text.includes('t-shirt')) updates.productId = 'classic-tee';
   else if (text.includes('hoodie')) updates.productId = 'hoodie';
   else if (text.includes('tote') || text.includes('bag')) updates.productId = 'tote';
 
