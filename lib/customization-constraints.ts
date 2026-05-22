@@ -125,7 +125,7 @@ export function validateCustomizationUpdates(raw: any): CustomizationUpdates {
   if (typeof raw.size === 'string') {
     const size = raw.size.toUpperCase();
     if (size !== 'STRING' && size !== 'SIZE') {
-      const isValid = validatedProduct
+      const isValid = validatedProduct && validatedProduct.sizes
         ? validatedProduct.sizes.includes(size)
         : ['XS', 'S', 'M', 'L', 'XL', '2XL'].includes(size);
       if (isValid) updates.size = size;
