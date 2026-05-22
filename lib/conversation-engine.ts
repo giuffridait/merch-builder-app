@@ -260,8 +260,18 @@ export async function processResponse(
   const userMentionsProductType = /\bpremi|\beco\b|\borganic\b|\bclassic\b|\bhood|\btote\b/i.test(userMessage);
   const keywordPickedProduct = !!keywordUpdates.product || userMentionsProductType;
 
-  // Only allow LLM to switch an existing product if the user explicitly named one
-  if (state.product && llmUpdates.product && !keywordPickedProduct) delete llmUpdates.product;
+  // Only block the product switch when it looks color-motivated: user asked for a color
+  // that's unavailable on their current product but didn't name a new product type.
+  // Allow all other switches (occasion/vibe/context recommendations).
+  const knownColors = ['black', 'white', 'red', 'navy', 'forest', 'burgundy', 'charcoal', 'natural', 'pink', 'blue', 'green'];
+  const msgLower = userMessage.toLowerCase();
+  const likelyColorSwitch = !!state.product && knownColors.some(color => {
+    if (!msgLower.includes(color)) return false;
+    return !(state.product as any).colors?.some((c: any) => c.name.toLowerCase() === color);
+  });
+  if (state.product && llmUpdates.product && !keywordPickedProduct && likelyColorSwitch) {
+    delete llmUpdates.product;
+  }
   // LLM product choice always wins over keyword — keyword is last-resort, not an override
   if (llmUpdates.product) delete keywordUpdates.product;
   // Keyword must not silently revert an already-selected product
@@ -365,7 +375,15 @@ export async function* processResponseStream(
   const userMentionsProductType = /\bpremi|\beco\b|\borganic\b|\bclassic\b|\bhood|\btote\b/i.test(userMessage);
   const keywordPickedProduct = !!keywordUpdates.product || userMentionsProductType;
 
-  if (state.product && llmUpdates.product && !keywordPickedProduct) delete llmUpdates.product;
+  const knownColors = ['black', 'white', 'red', 'navy', 'forest', 'burgundy', 'charcoal', 'natural', 'pink', 'blue', 'green'];
+  const msgLower = userMessage.toLowerCase();
+  const likelyColorSwitch = !!state.product && knownColors.some(color => {
+    if (!msgLower.includes(color)) return false;
+    return !(state.product as any).colors?.some((c: any) => c.name.toLowerCase() === color);
+  });
+  if (state.product && llmUpdates.product && !keywordPickedProduct && likelyColorSwitch) {
+    delete llmUpdates.product;
+  }
   if (llmUpdates.product) delete keywordUpdates.product;
   if (state.product && !llmUpdates.product) delete keywordUpdates.product;
 
