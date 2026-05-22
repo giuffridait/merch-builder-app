@@ -158,25 +158,30 @@ function parseKeywordUpdates(message: string): Record<string, any> {
 // ── Product inference from assistant text ─────────────────────────────────────
 // Recovery: if LLM mentions a product in text but forgets to set productId in updates JSON
 
+const PRODUCT_TEXT_PATTERNS: Array<[RegExp, string]> = [
+  [/premium[\s-]tee/, 'premium-tee'],
+  [/eco[\s-]tee|organic\s+tee/, 'eco-tee'],
+  [/classic[\s-]tee/, 'classic-tee'],
+  [/hoodie/, 'hoodie'],
+  [/canvas\s+tote|tote\s+bag/, 'tote'],
+];
+
 function inferProductFromText(text: string): string | null {
   const t = text.toLowerCase();
-  const patterns: Array<[RegExp, string]> = [
-    [/premium[\s-]tee/, 'premium-tee'],
-    [/eco[\s-]tee|organic\s+tee/, 'eco-tee'],
-    [/classic[\s-]tee/, 'classic-tee'],
-    [/hoodie/, 'hoodie'],
-    [/canvas\s+tote|tote\s+bag/, 'tote'],
-  ];
   // Return the FIRST product mentioned — the LLM's primary recommendation.
-  // Multiple mentions are fine; later ones are usually alternatives/suggestions.
   let first: { id: string; index: number } | null = null;
-  for (const [regex, id] of patterns) {
+  for (const [regex, id] of PRODUCT_TEXT_PATTERNS) {
     const m = regex.exec(t);
     if (m !== null && (first === null || m.index < first.index)) {
       first = { id, index: m.index };
     }
   }
   return first?.id ?? null;
+}
+
+function countProductsInText(text: string): number {
+  const t = text.toLowerCase();
+  return PRODUCT_TEXT_PATTERNS.filter(([r]) => r.exec(t) !== null).length;
 }
 
 // ── Update Normalization ───────────────────────────────────────────────────────
@@ -257,17 +262,18 @@ export async function processResponse(
   // language like "switch to something premium" where keyword regex requires exact phrase
   const userMentionsProductType = /\bpremi|\beco\b|\borganic\b|\bclassic\b|\bhood|\btote\b/i.test(userMessage);
 
-  // Reconcile LLM text vs JSON: the LLM's first-mentioned product in its response is
-  // its primary recommendation. If the JSON has a different (wrong) product — e.g. it
-  // said "premium tee" in text but put "classic-tee" in JSON as an alternative colour
-  // suggestion — trust the text when the user explicitly named a product type.
+  // Reconcile LLM text vs JSON:
+  // - If text mentions only ONE product type, that's an unambiguous recommendation →
+  //   use it even if the JSON has a different (wrong) product or forgot productId.
+  // - If text mentions multiple products (alternatives), only override when the user
+  //   explicitly named a product type (handles typos like "premiun").
   const textInferred = inferProductFromText(assistantMessage);
-  if (textInferred) {
+  const textProductCount = countProductsInText(assistantMessage);
+  const trustText = textProductCount === 1 || userMentionsProductType;
+  if (textInferred && trustText) {
     const textMatch = PRODUCTS.find(p => p.id === textInferred);
     if (textMatch) {
-      if (!llmUpdates.product) {
-        llmUpdates.product = textMatch;
-      } else if (userMentionsProductType && llmUpdates.product.id !== textInferred) {
+      if (!llmUpdates.product || llmUpdates.product.id !== textInferred) {
         llmUpdates.product = textMatch;
       }
     }
@@ -380,17 +386,18 @@ export async function* processResponseStream(
   const keywordUpdates = normalizeUpdates(keywordRaw, state.product);
   const userMentionsProductType = /\bpremi|\beco\b|\borganic\b|\bclassic\b|\bhood|\btote\b/i.test(userMessage);
 
-  // Reconcile LLM text vs JSON: the LLM's first-mentioned product in its response is
-  // its primary recommendation. If the JSON has a different (wrong) product — e.g. it
-  // said "premium tee" in text but put "classic-tee" in JSON as an alternative colour
-  // suggestion — trust the text when the user explicitly named a product type.
+  // Reconcile LLM text vs JSON:
+  // - If text mentions only ONE product type, that's an unambiguous recommendation →
+  //   use it even if the JSON has a different (wrong) product or forgot productId.
+  // - If text mentions multiple products (alternatives), only override when the user
+  //   explicitly named a product type (handles typos like "premiun").
   const textInferred = inferProductFromText(assistantMessage);
-  if (textInferred) {
+  const textProductCount = countProductsInText(assistantMessage);
+  const trustText = textProductCount === 1 || userMentionsProductType;
+  if (textInferred && trustText) {
     const textMatch = PRODUCTS.find(p => p.id === textInferred);
     if (textMatch) {
-      if (!llmUpdates.product) {
-        llmUpdates.product = textMatch;
-      } else if (userMentionsProductType && llmUpdates.product.id !== textInferred) {
+      if (!llmUpdates.product || llmUpdates.product.id !== textInferred) {
         llmUpdates.product = textMatch;
       }
     }

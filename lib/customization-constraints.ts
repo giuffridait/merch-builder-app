@@ -59,8 +59,7 @@ export function validateCustomizationUpdates(raw: any, currentProduct?: any): Cu
     const search = raw.productId.toLowerCase();
     validatedProduct = PRODUCTS.find(p =>
       p.id.toLowerCase() === search ||
-      p.name.toLowerCase() === search ||
-      p.category.toLowerCase() === search
+      p.name.toLowerCase() === search
     );
     if (validatedProduct) updates.productId = validatedProduct.id;
   }
