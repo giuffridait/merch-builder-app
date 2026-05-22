@@ -224,6 +224,8 @@ export async function processResponse(
   // Keyword fallback — deterministic parsing always runs and takes precedence
   const keywordRaw = parseKeywordUpdates(userMessage);
   const keywordUpdates = normalizeUpdates(keywordRaw);
+  // Don't revert an already-selected product via keyword match unless the LLM also signals a change
+  if (state.product && !llmUpdates.product) delete keywordUpdates.product;
   const updates = { ...llmUpdates, ...keywordUpdates };
 
   return { assistantMessage, updates };
@@ -288,6 +290,8 @@ export async function* processResponseStream(
 
   const keywordRaw = parseKeywordUpdates(userMessage);
   const keywordUpdates = normalizeUpdates(keywordRaw);
+  // Don't revert an already-selected product via keyword match unless the LLM also signals a change
+  if (state.product && !llmUpdates.product) delete keywordUpdates.product;
   const updates = { ...llmUpdates, ...keywordUpdates };
 
   // Stream the assistant text in small chunks for typing effect
