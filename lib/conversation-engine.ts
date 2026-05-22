@@ -156,8 +156,8 @@ function parseKeywordUpdates(message: string): Record<string, any> {
 
 // ── Update Normalization ───────────────────────────────────────────────────────
 
-function normalizeUpdates(raw: Record<string, any>): Partial<ConversationState> {
-  const validated = validateCustomizationUpdates(raw);
+function normalizeUpdates(raw: Record<string, any>, currentProduct?: any): Partial<ConversationState> {
+  const validated = validateCustomizationUpdates(raw, currentProduct);
   const updates: Partial<ConversationState> = {};
 
   if (validated.productId) {
@@ -218,17 +218,25 @@ export async function processResponse(
     const isRoleEcho = /^(merch\s*design\s*assistant|assistant|ai|bot)\s*$/i.test(rawAssistant.trim());
     assistantMessage = (!rawAssistant || isRoleEcho) ? (raw || "Tell me more about what you'd like to make.") : rawAssistant;
     if (parsed?.updates) {
-      llmUpdates = normalizeUpdates(parsed.updates);
+      llmUpdates = normalizeUpdates(parsed.updates, state.product);
     }
   } catch {
     assistantMessage = "I'm having trouble connecting right now. I've updated based on what I understood.";
   }
 
-  // Keyword fallback — deterministic parsing always runs and takes precedence
+  // Keyword fallback — deterministic parsing always runs as a safety net
   const keywordRaw = parseKeywordUpdates(userMessage);
-  const keywordUpdates = normalizeUpdates(keywordRaw);
-  // Don't revert an already-selected product via keyword match unless the LLM also signals a change
+  const keywordUpdates = normalizeUpdates(keywordRaw, state.product);
+  const keywordPickedProduct = !!keywordUpdates.product;
+
+  // Only allow LLM to switch an existing product if the user explicitly named one
+  // (i.e. keyword fallback also independently detected a product type in the message)
+  if (state.product && llmUpdates.product && !keywordPickedProduct) delete llmUpdates.product;
+  // LLM product choice always wins over keyword — keyword is last-resort, not an override
+  if (llmUpdates.product) delete keywordUpdates.product;
+  // Keyword must not silently revert an already-selected product
   if (state.product && !llmUpdates.product) delete keywordUpdates.product;
+
   const updates = { ...llmUpdates, ...keywordUpdates };
 
   return { assistantMessage, updates };
@@ -288,13 +296,17 @@ export async function* processResponseStream(
   const assistantMessage = (!rawAssistant || isRoleEcho) ? (fullContent || "Tell me more about what you'd like to make.") : rawAssistant;
   let llmUpdates: Partial<ConversationState> = {};
   if (parsed?.updates) {
-    llmUpdates = normalizeUpdates(parsed.updates);
+    llmUpdates = normalizeUpdates(parsed.updates, state.product);
   }
 
   const keywordRaw = parseKeywordUpdates(userMessage);
-  const keywordUpdates = normalizeUpdates(keywordRaw);
-  // Don't revert an already-selected product via keyword match unless the LLM also signals a change
+  const keywordUpdates = normalizeUpdates(keywordRaw, state.product);
+  const keywordPickedProduct = !!keywordUpdates.product;
+
+  if (state.product && llmUpdates.product && !keywordPickedProduct) delete llmUpdates.product;
+  if (llmUpdates.product) delete keywordUpdates.product;
   if (state.product && !llmUpdates.product) delete keywordUpdates.product;
+
   const updates = { ...llmUpdates, ...keywordUpdates };
 
   // Stream the assistant text in small chunks for typing effect
