@@ -156,7 +156,10 @@ export function useCreateFlow() {
     const icon = ICON_LIBRARY.find(i => i.id === state.icon) || ICON_LIBRARY.find(i => i.id === 'star') || ICON_LIBRARY[0];
     const defaults = generateDefaultVariants(text, icon);
     setDesigns(defaults.variants);
-    if (!selectedVariant || !defaults.variants.find(v => v.id === selectedVariant)) {
+    // Reset to recommended when: no variant selected, variant no longer exists,
+    // or text was just added but the current variant hides text (icon-only).
+    const variantHidesText = selectedVariant === 'icon-only';
+    if (!selectedVariant || !defaults.variants.find(v => v.id === selectedVariant) || (text && variantHidesText)) {
       setSelectedVariant(defaults.recommended);
     }
 
