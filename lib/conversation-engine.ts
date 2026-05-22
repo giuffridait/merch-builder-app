@@ -51,7 +51,7 @@ function buildSystemPrompt(state: ConversationState): string {
     '- CRITICAL: If the user requests a color not available for the current product, say so and list what IS available. Do NOT switch to a different product just to accommodate the color.',
     '- CRITICAL: Do not switch the product unless the user explicitly asks to change it.',
     '- The user can specify product, text, icon, color, size in any order or all at once.',
-    '- Set productId and productColor for the garment (e.g., "navy tee").',
+    '- ALWAYS include productId in updates whenever you select, recommend, or confirm a product — even if the user already has one selected.',
     '- Set textColor for the design/icon color (e.g., "white star", "red text").',
     '- Set text or iconId if mentioned.',
     '- If user asks to remove the icon, set action: "remove_icon" and iconId: "none".',
@@ -154,6 +154,19 @@ function parseKeywordUpdates(message: string): Record<string, any> {
   return updates;
 }
 
+// ── Product inference from assistant text ─────────────────────────────────────
+// Recovery: if LLM mentions a product in text but forgets to set productId in updates JSON
+
+function inferProductFromText(text: string): string | null {
+  const t = text.toLowerCase();
+  if (/premium[\s-]tee/.test(t)) return 'premium-tee';
+  if (/eco[\s-]tee|organic\s+tee/.test(t)) return 'eco-tee';
+  if (/classic[\s-]tee/.test(t)) return 'classic-tee';
+  if (/hoodie/.test(t)) return 'hoodie';
+  if (/canvas\s+tote|tote\s+bag/.test(t)) return 'tote';
+  return null;
+}
+
 // ── Update Normalization ───────────────────────────────────────────────────────
 
 function normalizeUpdates(raw: Record<string, any>, currentProduct?: any): Partial<ConversationState> {
@@ -219,6 +232,14 @@ export async function processResponse(
     assistantMessage = (!rawAssistant || isRoleEcho) ? (raw || "Tell me more about what you'd like to make.") : rawAssistant;
     if (parsed?.updates) {
       llmUpdates = normalizeUpdates(parsed.updates, state.product);
+    }
+    // If LLM mentioned a product in text but forgot to set productId in updates, recover it
+    if (!llmUpdates.product) {
+      const inferred = inferProductFromText(assistantMessage);
+      if (inferred) {
+        const match = PRODUCTS.find(p => p.id === inferred);
+        if (match) llmUpdates.product = match;
+      }
     }
   } catch {
     assistantMessage = "I'm having trouble connecting right now. I've updated based on what I understood.";
@@ -297,6 +318,14 @@ export async function* processResponseStream(
   let llmUpdates: Partial<ConversationState> = {};
   if (parsed?.updates) {
     llmUpdates = normalizeUpdates(parsed.updates, state.product);
+  }
+  // If LLM mentioned a product in text but forgot to set productId in updates, recover it
+  if (!llmUpdates.product) {
+    const inferred = inferProductFromText(assistantMessage);
+    if (inferred) {
+      const match = PRODUCTS.find(p => p.id === inferred);
+      if (match) llmUpdates.product = match;
+    }
   }
 
   const keywordRaw = parseKeywordUpdates(userMessage);
