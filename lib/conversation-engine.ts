@@ -37,18 +37,21 @@ function buildSystemPrompt(state: ConversationState): string {
     'NEVER use placeholders like "string", "number", or type names as values. Always use real values from the catalog.',
     '',
     'Tee options — actively recommend one based on the user\'s vibe/occasion/budget:',
-    '- classic-tee (€19.99): everyday soft cotton, Colors: Black, White, Navy, Forest, Burgundy — best for teams, events, casual everyday',
-    '- premium-tee (€27.99): heavyweight premium cotton, Colors: White, Black, Charcoal, Navy — best for gifts, lasting quality, premium feel',
-    '- eco-tee (€24.99): organic cotton, low-impact dyes, Colors: Natural, White, Forest — best for sustainability-minded, earthy/natural aesthetic',
-    'All tees: Sizes XS-2XL. Other products: hoodie (Colors: Black, Charcoal, Navy, Burgundy. Sizes: S-2XL), tote (Colors: Natural, Black).',
+    '- classic-tee (€19.99): everyday soft cotton, AVAILABLE COLORS ONLY: Black, White, Navy, Forest, Burgundy — best for teams, events, casual everyday',
+    '- premium-tee (€27.99): heavyweight premium cotton, AVAILABLE COLORS ONLY: White, Black, Charcoal, Navy — best for gifts, lasting quality, premium feel',
+    '- eco-tee (€24.99): organic cotton, low-impact dyes, AVAILABLE COLORS ONLY: Natural, White, Forest — best for sustainability-minded, earthy/natural aesthetic',
+    'All tees: Sizes XS-2XL. Other products: hoodie (AVAILABLE COLORS ONLY: Black, Charcoal, Navy, Burgundy. Sizes: S-2XL), tote (AVAILABLE COLORS ONLY: Natural, Black).',
     `Icons: ${ICON_LIBRARY.map(i => i.id).join(', ')}.`,
     `Text colors: ${Object.keys(TEXT_COLOR_OPTIONS).join(', ')}.`,
     '',
     'RULES:',
     '- Only support the products listed above. Reject others politely.',
     '- When user mentions a tee/shirt without specifying which type, ask or recommend based on their vibe/occasion (e.g. eco for sustainable vibes, premium for gifts, classic for teams).',
+    '- CRITICAL: Only set productColor to a color explicitly listed for the current product above. Never invent or guess colors.',
+    '- CRITICAL: If the user requests a color not available for the current product, say so and list what IS available. Do NOT switch to a different product just to accommodate the color. Set the productColor to the closest available color instead.',
+    '- CRITICAL: Do not switch the product unless the user explicitly asks to change it (typos like "premiun" count as "premium").',
     '- The user can specify product, text, icon, color, size in any order or all at once.',
-    '- Set productId and productColor for the garment (e.g., "navy tee").',
+    '- ALWAYS include productId in updates whenever you select, recommend, or confirm a product — even if the user already has one selected.',
     '- Set textColor for the design/icon color (e.g., "white star", "red text").',
     '- Set text or iconId if mentioned.',
     '- If user asks to remove the icon, set action: "remove_icon" and iconId: "none".',
@@ -79,12 +82,13 @@ function parseKeywordUpdates(message: string): Record<string, any> {
   const text = message.toLowerCase();
   const updates: Record<string, any> = {};
 
-  // Product keywords
+  // Product keywords — only explicit qualifiers to avoid "make the t-shirt bigger" switching products
   if (/premium\s+(?:tee|shirt|t-shirt)/i.test(text)) updates.productId = 'premium-tee';
   else if (/eco\s+(?:tee|shirt|t-shirt)|organic\s+(?:tee|shirt)|sustainable\s+(?:tee|shirt)/i.test(text)) updates.productId = 'eco-tee';
-  else if (text.includes('tee') || text.includes('shirt') || text.includes('t-shirt')) updates.productId = 'classic-tee';
+  else if (/classic\s+(?:tee|shirt|t-shirt)/i.test(text)) updates.productId = 'classic-tee';
   else if (text.includes('hoodie')) updates.productId = 'hoodie';
-  else if (text.includes('tote') || text.includes('bag')) updates.productId = 'tote';
+  else if (text.includes('tote') || /\bbag\b/.test(text)) updates.productId = 'tote';
+  // bare "tee/shirt/t-shirt" intentionally omitted — ambiguous, LLM decides
 
   const colors = ['black', 'white', 'red', 'navy', 'forest', 'burgundy', 'charcoal', 'natural', 'pink', 'blue', 'green'];
 
@@ -151,10 +155,39 @@ function parseKeywordUpdates(message: string): Record<string, any> {
   return updates;
 }
 
+// ── Product inference from assistant text ─────────────────────────────────────
+// Recovery: if LLM mentions a product in text but forgets to set productId in updates JSON
+
+const PRODUCT_TEXT_PATTERNS: Array<[RegExp, string]> = [
+  [/premium[\s-]tee/, 'premium-tee'],
+  [/eco[\s-]tee|organic\s+tee/, 'eco-tee'],
+  [/classic[\s-]tee/, 'classic-tee'],
+  [/hoodie/, 'hoodie'],
+  [/canvas\s+tote|tote\s+bag/, 'tote'],
+];
+
+function inferProductFromText(text: string): string | null {
+  const t = text.toLowerCase();
+  // Return the FIRST product mentioned — the LLM's primary recommendation.
+  let first: { id: string; index: number } | null = null;
+  for (const [regex, id] of PRODUCT_TEXT_PATTERNS) {
+    const m = regex.exec(t);
+    if (m !== null && (first === null || m.index < first.index)) {
+      first = { id, index: m.index };
+    }
+  }
+  return first?.id ?? null;
+}
+
+function countProductsInText(text: string): number {
+  const t = text.toLowerCase();
+  return PRODUCT_TEXT_PATTERNS.filter(([r]) => r.exec(t) !== null).length;
+}
+
 // ── Update Normalization ───────────────────────────────────────────────────────
 
-function normalizeUpdates(raw: Record<string, any>): Partial<ConversationState> {
-  const validated = validateCustomizationUpdates(raw);
+function normalizeUpdates(raw: Record<string, any>, currentProduct?: any): Partial<ConversationState> {
+  const validated = validateCustomizationUpdates(raw, currentProduct);
   const updates: Partial<ConversationState> = {};
 
   if (validated.productId) {
@@ -215,16 +248,81 @@ export async function processResponse(
     const isRoleEcho = /^(merch\s*design\s*assistant|assistant|ai|bot)\s*$/i.test(rawAssistant.trim());
     assistantMessage = (!rawAssistant || isRoleEcho) ? (raw || "Tell me more about what you'd like to make.") : rawAssistant;
     if (parsed?.updates) {
-      llmUpdates = normalizeUpdates(parsed.updates);
+      llmUpdates = normalizeUpdates(parsed.updates, state.product);
     }
-  } catch {
+    console.error('[DBG:sync] raw:', JSON.stringify(parsed?.updates), '| product:', llmUpdates.product?.id, '| msg:', assistantMessage.slice(0, 80));
+  } catch (e) {
+    console.error('[DBG:sync] LLM error:', e);
     assistantMessage = "I'm having trouble connecting right now. I've updated based on what I understood.";
   }
 
-  // Keyword fallback — deterministic parsing always runs and takes precedence
+  // Keyword fallback — deterministic parsing always runs as a safety net
   const keywordRaw = parseKeywordUpdates(userMessage);
-  const keywordUpdates = normalizeUpdates(keywordRaw);
+  const keywordUpdates = normalizeUpdates(keywordRaw, state.product);
+  // Accept LLM product switch if keyword detected one, OR if user's message itself
+  // contains a product-type word ("premium", "eco", "hoodie", etc.) — handles natural
+  // language like "switch to something premium" where keyword regex requires exact phrase
+  const userMentionsProductType = /\bpremi|\beco\b|\borganic\b|\bclassic\b|\bhood|\btote\b/i.test(userMessage);
+
+  // Reconcile LLM text vs JSON:
+  // - If text mentions only ONE product type, that's an unambiguous recommendation →
+  //   use it even if the JSON has a different (wrong) product or forgot productId.
+  // - If text mentions multiple products (alternatives), only override when the user
+  //   explicitly named a product type (handles typos like "premiun").
+  const textInferred = inferProductFromText(assistantMessage);
+  const textProductCount = countProductsInText(assistantMessage);
+  const trustText = textProductCount === 1 || userMentionsProductType;
+  if (textInferred && trustText) {
+    const textMatch = PRODUCTS.find(p => p.id === textInferred);
+    if (textMatch) {
+      if (!llmUpdates.product || llmUpdates.product.id !== textInferred) {
+        llmUpdates.product = textMatch;
+      }
+    }
+  }
+  const keywordPickedProduct = !!keywordUpdates.product || userMentionsProductType;
+
+  // Only block the product switch when it looks color-motivated: user asked for a color
+  // that's unavailable on their current product but didn't name a new product type.
+  // Allow all other switches (occasion/vibe/context recommendations).
+  const knownColors = ['black', 'white', 'red', 'navy', 'forest', 'burgundy', 'charcoal', 'natural', 'pink', 'blue', 'green'];
+  const msgLower = userMessage.toLowerCase();
+  const likelyColorSwitch = !!state.product && knownColors.some(color => {
+    if (!msgLower.includes(color)) return false;
+    return !(state.product as any).colors?.some((c: any) => c.name.toLowerCase() === color);
+  });
+  if (state.product && llmUpdates.product && !keywordPickedProduct && likelyColorSwitch) {
+    delete llmUpdates.product;
+  }
+  // LLM product choice always wins over keyword — keyword is last-resort, not an override
+  if (llmUpdates.product) delete keywordUpdates.product;
+  // Keyword must not silently revert an already-selected product
+  if (state.product && !llmUpdates.product) delete keywordUpdates.product;
+
   const updates = { ...llmUpdates, ...keywordUpdates };
+
+  const effectiveProduct = updates.product || state.product;
+
+  // Re-validate productColor against whichever product will actually be used
+  if (effectiveProduct && updates.productColor) {
+    const colorValid = (effectiveProduct as any).colors?.some(
+      (c: { name: string }) => c.name.toLowerCase() === (updates.productColor as string).toLowerCase()
+    ) ?? false;
+    if (!colorValid) delete updates.productColor;
+  }
+
+  // Re-validate size — it may have been validated against LLM's intended (now-blocked) product
+  if (effectiveProduct && updates.size) {
+    const sizeValid = !(effectiveProduct as any).sizes ||
+      (effectiveProduct as any).sizes.includes(updates.size as string);
+    if (!sizeValid) delete updates.size;
+  }
+
+  // Last resort: bare "tee/shirt" with no product selected yet → default to classic-tee
+  if (!updates.product && !state.product && /\b(?:tee|shirt|t-shirt)\b/i.test(userMessage)) {
+    const fallback = PRODUCTS.find(p => p.id === 'classic-tee');
+    if (fallback) updates.product = fallback;
+  }
 
   return { assistantMessage, updates };
 }
@@ -254,7 +352,8 @@ export async function* processResponseStream(
         fullContent = event.fullContent;
       }
     }
-  } catch {
+  } catch (e) {
+    console.error('[DBG:stream] stream failed, falling back:', e);
     // On stream failure, fall back to non-streaming
     const result = await processResponse(userMessage, state, messageHistory);
     // Stream the assistant message character by character
@@ -283,12 +382,71 @@ export async function* processResponseStream(
   const assistantMessage = (!rawAssistant || isRoleEcho) ? (fullContent || "Tell me more about what you'd like to make.") : rawAssistant;
   let llmUpdates: Partial<ConversationState> = {};
   if (parsed?.updates) {
-    llmUpdates = normalizeUpdates(parsed.updates);
+    llmUpdates = normalizeUpdates(parsed.updates, state.product);
   }
 
+  console.error('[DBG] raw LLM JSON updates:', JSON.stringify(parsed?.updates));
+  console.error('[DBG] llmUpdates.product:', llmUpdates.product?.id);
+  console.error('[DBG] assistantMessage snippet:', assistantMessage.slice(0, 120));
+
   const keywordRaw = parseKeywordUpdates(userMessage);
-  const keywordUpdates = normalizeUpdates(keywordRaw);
+  const keywordUpdates = normalizeUpdates(keywordRaw, state.product);
+  const userMentionsProductType = /\bpremi|\beco\b|\borganic\b|\bclassic\b|\bhood|\btote\b/i.test(userMessage);
+
+  // Reconcile LLM text vs JSON:
+  // - If text mentions only ONE product type, that's an unambiguous recommendation →
+  //   use it even if the JSON has a different (wrong) product or forgot productId.
+  // - If text mentions multiple products (alternatives), only override when the user
+  //   explicitly named a product type (handles typos like "premiun").
+  const textInferred = inferProductFromText(assistantMessage);
+  const textProductCount = countProductsInText(assistantMessage);
+  const trustText = textProductCount === 1 || userMentionsProductType;
+  console.error('[DBG] textInferred:', textInferred, '| textProductCount:', textProductCount, '| trustText:', trustText);
+  if (textInferred && trustText) {
+    const textMatch = PRODUCTS.find(p => p.id === textInferred);
+    if (textMatch) {
+      if (!llmUpdates.product || llmUpdates.product.id !== textInferred) {
+        console.error('[DBG] overriding product with text-inferred:', textInferred);
+        llmUpdates.product = textMatch;
+      }
+    }
+  }
+  const keywordPickedProduct = !!keywordUpdates.product || userMentionsProductType;
+  console.error('[DBG] final llmUpdates.product:', llmUpdates.product?.id, '| keywordPickedProduct:', keywordPickedProduct);
+
+  const knownColors = ['black', 'white', 'red', 'navy', 'forest', 'burgundy', 'charcoal', 'natural', 'pink', 'blue', 'green'];
+  const msgLower = userMessage.toLowerCase();
+  const likelyColorSwitch = !!state.product && knownColors.some(color => {
+    if (!msgLower.includes(color)) return false;
+    return !(state.product as any).colors?.some((c: any) => c.name.toLowerCase() === color);
+  });
+  if (state.product && llmUpdates.product && !keywordPickedProduct && likelyColorSwitch) {
+    delete llmUpdates.product;
+  }
+  if (llmUpdates.product) delete keywordUpdates.product;
+  if (state.product && !llmUpdates.product) delete keywordUpdates.product;
+
   const updates = { ...llmUpdates, ...keywordUpdates };
+
+  const effectiveProduct = updates.product || state.product;
+
+  if (effectiveProduct && updates.productColor) {
+    const colorValid = (effectiveProduct as any).colors?.some(
+      (c: { name: string }) => c.name.toLowerCase() === (updates.productColor as string).toLowerCase()
+    ) ?? false;
+    if (!colorValid) delete updates.productColor;
+  }
+
+  if (effectiveProduct && updates.size) {
+    const sizeValid = !(effectiveProduct as any).sizes ||
+      (effectiveProduct as any).sizes.includes(updates.size as string);
+    if (!sizeValid) delete updates.size;
+  }
+
+  if (!updates.product && !state.product && /\b(?:tee|shirt|t-shirt)\b/i.test(userMessage)) {
+    const fallback = PRODUCTS.find(p => p.id === 'classic-tee');
+    if (fallback) updates.product = fallback;
+  }
 
   // Stream the assistant text in small chunks for typing effect
   const chunks = assistantMessage.match(/.{1,4}/g) || [];

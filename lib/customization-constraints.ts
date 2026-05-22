@@ -50,7 +50,7 @@ export function normalizeText(text?: string) {
   return text.trim().replace(/\s+/g, ' ');
 }
 
-export function validateCustomizationUpdates(raw: any): CustomizationUpdates {
+export function validateCustomizationUpdates(raw: any, currentProduct?: any): CustomizationUpdates {
   const updates: CustomizationUpdates = {};
   if (!raw || typeof raw !== 'object') return updates;
 
@@ -59,8 +59,7 @@ export function validateCustomizationUpdates(raw: any): CustomizationUpdates {
     const search = raw.productId.toLowerCase();
     validatedProduct = PRODUCTS.find(p =>
       p.id.toLowerCase() === search ||
-      p.name.toLowerCase() === search ||
-      p.category.toLowerCase() === search
+      p.name.toLowerCase() === search
     );
     if (validatedProduct) updates.productId = validatedProduct.id;
   }
@@ -104,8 +103,9 @@ export function validateCustomizationUpdates(raw: any): CustomizationUpdates {
   if (typeof rawColor === 'string') {
     const color = rawColor.toLowerCase();
     if (color !== 'string' && color !== 'color' && color !== 'productcolor') {
-      const isValid = validatedProduct
-        ? validatedProduct.colors.some((c: any) => c.name.toLowerCase() === color)
+      const referenceProduct = validatedProduct || currentProduct;
+      const isValid = referenceProduct
+        ? referenceProduct.colors.some((c: any) => c.name.toLowerCase() === color)
         : allowedColors.includes(color);
 
       if (isValid) {
