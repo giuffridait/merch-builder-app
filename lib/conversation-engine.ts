@@ -167,7 +167,8 @@ function inferProductFromText(text: string): string | null {
     [/hoodie/, 'hoodie'],
     [/canvas\s+tote|tote\s+bag/, 'tote'],
   ];
-  const matched = [...new Set(patterns.filter(([r]) => r.test(t)).map(([, id]) => id))];
+  const matched = patterns.filter(([r]) => r.test(t)).map(([, id]) => id)
+    .filter((id, i, arr) => arr.indexOf(id) === i);
   // If multiple different products mentioned, can't reliably infer intent
   return matched.length === 1 ? matched[0] : null;
 }
