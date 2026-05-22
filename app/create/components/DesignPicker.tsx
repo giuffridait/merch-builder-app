@@ -43,7 +43,10 @@ export default function DesignPicker({ designs, selectedVariant, onSelect, selec
               : 'border-[#e4e4e4] bg-white hover:border-[#cfcfcf]'
             }`}
           >
-            <div className="h-28 rounded-xl bg-[#f7f7f7] border border-[#e4e4e4] flex items-center justify-center mb-3">
+            <div
+                className="h-28 rounded-xl border border-[#e4e4e4] flex items-center justify-center mb-3"
+                style={{ backgroundColor: selectedColorHex }}
+              >
               <div
                 className="w-20 h-20"
                 style={{ color: getContrastColor(selectedColorHex) }}
