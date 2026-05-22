@@ -82,12 +82,13 @@ function parseKeywordUpdates(message: string): Record<string, any> {
   const text = message.toLowerCase();
   const updates: Record<string, any> = {};
 
-  // Product keywords
+  // Product keywords — only explicit qualifiers to avoid "make the t-shirt bigger" switching products
   if (/premium\s+(?:tee|shirt|t-shirt)/i.test(text)) updates.productId = 'premium-tee';
   else if (/eco\s+(?:tee|shirt|t-shirt)|organic\s+(?:tee|shirt)|sustainable\s+(?:tee|shirt)/i.test(text)) updates.productId = 'eco-tee';
-  else if (text.includes('tee') || text.includes('shirt') || text.includes('t-shirt')) updates.productId = 'classic-tee';
+  else if (/classic\s+(?:tee|shirt|t-shirt)/i.test(text)) updates.productId = 'classic-tee';
   else if (text.includes('hoodie')) updates.productId = 'hoodie';
   else if (text.includes('tote') || text.includes('bag')) updates.productId = 'tote';
+  // bare "tee/shirt/t-shirt" intentionally omitted — ambiguous, LLM decides
 
   const colors = ['black', 'white', 'red', 'navy', 'forest', 'burgundy', 'charcoal', 'natural', 'pink', 'blue', 'green'];
 
@@ -260,6 +261,15 @@ export async function processResponse(
 
   const updates = { ...llmUpdates, ...keywordUpdates };
 
+  // Re-validate productColor against whichever product will actually be used
+  const effectiveProduct = updates.product || state.product;
+  if (effectiveProduct && updates.productColor) {
+    const colorValid = (effectiveProduct as any).colors.some(
+      (c: { name: string }) => c.name.toLowerCase() === (updates.productColor as string).toLowerCase()
+    );
+    if (!colorValid) delete updates.productColor;
+  }
+
   return { assistantMessage, updates };
 }
 
@@ -337,6 +347,15 @@ export async function* processResponseStream(
   if (state.product && !llmUpdates.product) delete keywordUpdates.product;
 
   const updates = { ...llmUpdates, ...keywordUpdates };
+
+  // Re-validate productColor against whichever product will actually be used
+  const effectiveProduct = updates.product || state.product;
+  if (effectiveProduct && updates.productColor) {
+    const colorValid = (effectiveProduct as any).colors.some(
+      (c: { name: string }) => c.name.toLowerCase() === (updates.productColor as string).toLowerCase()
+    );
+    if (!colorValid) delete updates.productColor;
+  }
 
   // Stream the assistant text in small chunks for typing effect
   const chunks = assistantMessage.match(/.{1,4}/g) || [];
