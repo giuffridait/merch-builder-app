@@ -48,8 +48,8 @@ function buildSystemPrompt(state: ConversationState): string {
     '- Only support the products listed above. Reject others politely.',
     '- When user mentions a tee/shirt without specifying which type, ask or recommend based on their vibe/occasion (e.g. eco for sustainable vibes, premium for gifts, classic for teams).',
     '- CRITICAL: Only set productColor to a color explicitly listed for the current product above. Never invent or guess colors.',
-    '- CRITICAL: If the user requests a color not available for the current product, say so and list what IS available. Do NOT switch to a different product just to accommodate the color.',
-    '- CRITICAL: Do not switch the product unless the user explicitly asks to change it.',
+    '- CRITICAL: If the user requests a color not available for the current product, say so and list what IS available. Do NOT switch to a different product just to accommodate the color. Set the productColor to the closest available color instead.',
+    '- CRITICAL: Do not switch the product unless the user explicitly asks to change it (typos like "premiun" count as "premium").',
     '- The user can specify product, text, icon, color, size in any order or all at once.',
     '- ALWAYS include productId in updates whenever you select, recommend, or confirm a product — even if the user already has one selected.',
     '- Set textColor for the design/icon color (e.g., "white star", "red text").',
@@ -257,7 +257,7 @@ export async function processResponse(
   // Accept LLM product switch if keyword detected one, OR if user's message itself
   // contains a product-type word ("premium", "eco", "hoodie", etc.) — handles natural
   // language like "switch to something premium" where keyword regex requires exact phrase
-  const userMentionsProductType = /\b(premium|eco|organic|classic|hoodie|tote)\b/i.test(userMessage);
+  const userMentionsProductType = /\bpremi|\beco\b|\borganic\b|\bclassic\b|\bhood|\btote\b/i.test(userMessage);
   const keywordPickedProduct = !!keywordUpdates.product || userMentionsProductType;
 
   // Only allow LLM to switch an existing product if the user explicitly named one
@@ -362,7 +362,7 @@ export async function* processResponseStream(
 
   const keywordRaw = parseKeywordUpdates(userMessage);
   const keywordUpdates = normalizeUpdates(keywordRaw, state.product);
-  const userMentionsProductType = /\b(premium|eco|organic|classic|hoodie|tote)\b/i.test(userMessage);
+  const userMentionsProductType = /\bpremi|\beco\b|\borganic\b|\bclassic\b|\bhood|\btote\b/i.test(userMessage);
   const keywordPickedProduct = !!keywordUpdates.product || userMentionsProductType;
 
   if (state.product && llmUpdates.product && !keywordPickedProduct) delete llmUpdates.product;
