@@ -382,6 +382,10 @@ export async function* processResponseStream(
     llmUpdates = normalizeUpdates(parsed.updates, state.product);
   }
 
+  console.error('[DBG] raw LLM JSON updates:', JSON.stringify(parsed?.updates));
+  console.error('[DBG] llmUpdates.product:', llmUpdates.product?.id);
+  console.error('[DBG] assistantMessage snippet:', assistantMessage.slice(0, 120));
+
   const keywordRaw = parseKeywordUpdates(userMessage);
   const keywordUpdates = normalizeUpdates(keywordRaw, state.product);
   const userMentionsProductType = /\bpremi|\beco\b|\borganic\b|\bclassic\b|\bhood|\btote\b/i.test(userMessage);
@@ -394,15 +398,18 @@ export async function* processResponseStream(
   const textInferred = inferProductFromText(assistantMessage);
   const textProductCount = countProductsInText(assistantMessage);
   const trustText = textProductCount === 1 || userMentionsProductType;
+  console.error('[DBG] textInferred:', textInferred, '| textProductCount:', textProductCount, '| trustText:', trustText);
   if (textInferred && trustText) {
     const textMatch = PRODUCTS.find(p => p.id === textInferred);
     if (textMatch) {
       if (!llmUpdates.product || llmUpdates.product.id !== textInferred) {
+        console.error('[DBG] overriding product with text-inferred:', textInferred);
         llmUpdates.product = textMatch;
       }
     }
   }
   const keywordPickedProduct = !!keywordUpdates.product || userMentionsProductType;
+  console.error('[DBG] final llmUpdates.product:', llmUpdates.product?.id, '| keywordPickedProduct:', keywordPickedProduct);
 
   const knownColors = ['black', 'white', 'red', 'navy', 'forest', 'burgundy', 'charcoal', 'natural', 'pink', 'blue', 'green'];
   const msgLower = userMessage.toLowerCase();
