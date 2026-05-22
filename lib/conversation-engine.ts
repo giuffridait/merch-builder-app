@@ -250,7 +250,9 @@ export async function processResponse(
     if (parsed?.updates) {
       llmUpdates = normalizeUpdates(parsed.updates, state.product);
     }
-  } catch {
+    console.error('[DBG:sync] raw:', JSON.stringify(parsed?.updates), '| product:', llmUpdates.product?.id, '| msg:', assistantMessage.slice(0, 80));
+  } catch (e) {
+    console.error('[DBG:sync] LLM error:', e);
     assistantMessage = "I'm having trouble connecting right now. I've updated based on what I understood.";
   }
 
@@ -350,7 +352,8 @@ export async function* processResponseStream(
         fullContent = event.fullContent;
       }
     }
-  } catch {
+  } catch (e) {
+    console.error('[DBG:stream] stream failed, falling back:', e);
     // On stream failure, fall back to non-streaming
     const result = await processResponse(userMessage, state, messageHistory);
     // Stream the assistant message character by character
