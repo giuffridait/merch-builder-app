@@ -250,9 +250,8 @@ export async function processResponse(
     if (parsed?.updates) {
       llmUpdates = normalizeUpdates(parsed.updates, state.product);
     }
-    console.error('[DBG:sync] raw:', JSON.stringify(parsed?.updates), '| product:', llmUpdates.product?.id, '| msg:', assistantMessage.slice(0, 80));
   } catch (e) {
-    console.error('[DBG:sync] LLM error:', e);
+    console.error('[engine] LLM error:', e);
     assistantMessage = "I'm having trouble connecting right now. I've updated based on what I understood.";
   }
 
@@ -353,7 +352,7 @@ export async function* processResponseStream(
       }
     }
   } catch (e) {
-    console.error('[DBG:stream] stream failed, falling back:', e);
+    console.error('[engine] stream failed, falling back:', e);
     // On stream failure, fall back to non-streaming
     const result = await processResponse(userMessage, state, messageHistory);
     // Stream the assistant message character by character
@@ -385,10 +384,6 @@ export async function* processResponseStream(
     llmUpdates = normalizeUpdates(parsed.updates, state.product);
   }
 
-  console.error('[DBG] raw LLM JSON updates:', JSON.stringify(parsed?.updates));
-  console.error('[DBG] llmUpdates.product:', llmUpdates.product?.id);
-  console.error('[DBG] assistantMessage snippet:', assistantMessage.slice(0, 120));
-
   const keywordRaw = parseKeywordUpdates(userMessage);
   const keywordUpdates = normalizeUpdates(keywordRaw, state.product);
   const userMentionsProductType = /\bpremi|\beco\b|\borganic\b|\bclassic\b|\bhood|\btote\b/i.test(userMessage);
@@ -401,18 +396,15 @@ export async function* processResponseStream(
   const textInferred = inferProductFromText(assistantMessage);
   const textProductCount = countProductsInText(assistantMessage);
   const trustText = textProductCount === 1 || userMentionsProductType;
-  console.error('[DBG] textInferred:', textInferred, '| textProductCount:', textProductCount, '| trustText:', trustText);
   if (textInferred && trustText) {
     const textMatch = PRODUCTS.find(p => p.id === textInferred);
     if (textMatch) {
       if (!llmUpdates.product || llmUpdates.product.id !== textInferred) {
-        console.error('[DBG] overriding product with text-inferred:', textInferred);
         llmUpdates.product = textMatch;
       }
     }
   }
   const keywordPickedProduct = !!keywordUpdates.product || userMentionsProductType;
-  console.error('[DBG] final llmUpdates.product:', llmUpdates.product?.id, '| keywordPickedProduct:', keywordPickedProduct);
 
   const knownColors = ['black', 'white', 'red', 'navy', 'forest', 'burgundy', 'charcoal', 'natural', 'pink', 'blue', 'green'];
   const msgLower = userMessage.toLowerCase();
