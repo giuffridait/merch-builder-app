@@ -167,10 +167,16 @@ function inferProductFromText(text: string): string | null {
     [/hoodie/, 'hoodie'],
     [/canvas\s+tote|tote\s+bag/, 'tote'],
   ];
-  const matched = patterns.filter(([r]) => r.test(t)).map(([, id]) => id)
-    .filter((id, i, arr) => arr.indexOf(id) === i);
-  // If multiple different products mentioned, can't reliably infer intent
-  return matched.length === 1 ? matched[0] : null;
+  // Return the FIRST product mentioned — the LLM's primary recommendation.
+  // Multiple mentions are fine; later ones are usually alternatives/suggestions.
+  let first: { id: string; index: number } | null = null;
+  for (const [regex, id] of patterns) {
+    const m = regex.exec(t);
+    if (m !== null && (first === null || m.index < first.index)) {
+      first = { id, index: m.index };
+    }
+  }
+  return first?.id ?? null;
 }
 
 // ── Update Normalization ───────────────────────────────────────────────────────
@@ -239,14 +245,6 @@ export async function processResponse(
     if (parsed?.updates) {
       llmUpdates = normalizeUpdates(parsed.updates, state.product);
     }
-    // If LLM mentioned a product in text but forgot to set productId in updates, recover it
-    if (!llmUpdates.product) {
-      const inferred = inferProductFromText(assistantMessage);
-      if (inferred) {
-        const match = PRODUCTS.find(p => p.id === inferred);
-        if (match) llmUpdates.product = match;
-      }
-    }
   } catch {
     assistantMessage = "I'm having trouble connecting right now. I've updated based on what I understood.";
   }
@@ -258,6 +256,22 @@ export async function processResponse(
   // contains a product-type word ("premium", "eco", "hoodie", etc.) — handles natural
   // language like "switch to something premium" where keyword regex requires exact phrase
   const userMentionsProductType = /\bpremi|\beco\b|\borganic\b|\bclassic\b|\bhood|\btote\b/i.test(userMessage);
+
+  // Reconcile LLM text vs JSON: the LLM's first-mentioned product in its response is
+  // its primary recommendation. If the JSON has a different (wrong) product — e.g. it
+  // said "premium tee" in text but put "classic-tee" in JSON as an alternative colour
+  // suggestion — trust the text when the user explicitly named a product type.
+  const textInferred = inferProductFromText(assistantMessage);
+  if (textInferred) {
+    const textMatch = PRODUCTS.find(p => p.id === textInferred);
+    if (textMatch) {
+      if (!llmUpdates.product) {
+        llmUpdates.product = textMatch;
+      } else if (userMentionsProductType && llmUpdates.product.id !== textInferred) {
+        llmUpdates.product = textMatch;
+      }
+    }
+  }
   const keywordPickedProduct = !!keywordUpdates.product || userMentionsProductType;
 
   // Only block the product switch when it looks color-motivated: user asked for a color
@@ -361,18 +375,26 @@ export async function* processResponseStream(
   if (parsed?.updates) {
     llmUpdates = normalizeUpdates(parsed.updates, state.product);
   }
-  // If LLM mentioned a product in text but forgot to set productId in updates, recover it
-  if (!llmUpdates.product) {
-    const inferred = inferProductFromText(assistantMessage);
-    if (inferred) {
-      const match = PRODUCTS.find(p => p.id === inferred);
-      if (match) llmUpdates.product = match;
-    }
-  }
 
   const keywordRaw = parseKeywordUpdates(userMessage);
   const keywordUpdates = normalizeUpdates(keywordRaw, state.product);
   const userMentionsProductType = /\bpremi|\beco\b|\borganic\b|\bclassic\b|\bhood|\btote\b/i.test(userMessage);
+
+  // Reconcile LLM text vs JSON: the LLM's first-mentioned product in its response is
+  // its primary recommendation. If the JSON has a different (wrong) product — e.g. it
+  // said "premium tee" in text but put "classic-tee" in JSON as an alternative colour
+  // suggestion — trust the text when the user explicitly named a product type.
+  const textInferred = inferProductFromText(assistantMessage);
+  if (textInferred) {
+    const textMatch = PRODUCTS.find(p => p.id === textInferred);
+    if (textMatch) {
+      if (!llmUpdates.product) {
+        llmUpdates.product = textMatch;
+      } else if (userMentionsProductType && llmUpdates.product.id !== textInferred) {
+        llmUpdates.product = textMatch;
+      }
+    }
+  }
   const keywordPickedProduct = !!keywordUpdates.product || userMentionsProductType;
 
   const knownColors = ['black', 'white', 'red', 'navy', 'forest', 'burgundy', 'charcoal', 'natural', 'pink', 'blue', 'green'];
