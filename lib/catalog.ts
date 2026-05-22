@@ -37,6 +37,48 @@ export const PRODUCTS: Product[] = [
     }
   },
   {
+    id: 'premium-tee',
+    name: 'Premium Tee',
+    category: 'tee',
+    basePrice: 27.99,
+    colors: [
+      { name: 'White', hex: '#ffffff' },
+      { name: 'Black', hex: '#1a1a1a' },
+      { name: 'Charcoal', hex: '#4a4a4a' },
+      { name: 'Navy', hex: '#1e3a5f' },
+    ],
+    sizes: ['XS', 'S', 'M', 'L', 'XL', '2XL'],
+    printArea: { x: 30, y: 25, w: 40, h: 45 },
+    emoji: '👕',
+    imageUrl: '/images/products/premium-tee-white-premium-cotton.png',
+    imageUrlByColor: {
+      white: '/images/products/premium-tee-white-premium-cotton.png',
+      black: '/images/products/premium-tee-black-premium-cotton.png',
+      charcoal: '/images/products/premium-tee-charcoal-premium-cotton.png',
+      navy: '/images/products/premium-tee-navy-premium-cotton.png',
+    }
+  },
+  {
+    id: 'eco-tee',
+    name: 'Eco Tee',
+    category: 'tee',
+    basePrice: 24.99,
+    colors: [
+      { name: 'Natural', hex: '#f5f1e8' },
+      { name: 'White', hex: '#ffffff' },
+      { name: 'Forest', hex: '#2d5016' },
+    ],
+    sizes: ['XS', 'S', 'M', 'L', 'XL', '2XL'],
+    printArea: { x: 30, y: 25, w: 40, h: 45 },
+    emoji: '🌿',
+    imageUrl: '/images/products/eco-tee-natural-organic.png',
+    imageUrlByColor: {
+      natural: '/images/products/eco-tee-natural-organic.png',
+      white: '/images/products/eco-tee-white-organic.png',
+      forest: '/images/products/eco-tee-forest-organic.png',
+    }
+  },
+  {
     id: 'hoodie',
     name: 'Comfort Hoodie',
     category: 'hoodie',
