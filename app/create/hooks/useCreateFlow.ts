@@ -354,7 +354,7 @@ export function useCreateFlow() {
       setStreamingText('');
       setIsTyping(false);
     }
-  }, [input, isTyping, state, selectedColor, addMessage]);
+  }, [input, isTyping, state, selectedColor, addMessage, handleAddToCart]);
 
   // ── Add to Cart ─────────────────────────────────────────────────────────────
 
