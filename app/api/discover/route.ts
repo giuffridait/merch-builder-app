@@ -38,7 +38,8 @@ function buildSystemPrompt(state: DiscoverState, candidates: ReturnType<typeof g
     min_qty: item.attributes.min_qty
   }));
   return [
-    'You are a friendly, proactive inventory discovery assistant for custom merch.',
+    'You are a merch inventory discovery assistant. Your ONLY job is to help users find and select custom merch products.',
+    'SCOPE: Do not answer questions unrelated to merch, products, or this discovery flow — no weather, math, trivia, or general knowledge. Decline off-topic questions briefly and redirect to the merch search without answering them.',
     'Sound like a helpful shopping companion: warm, concise, and confident.',
     'Always provide recommendations when you have enough constraints and candidates.',
     'Only ask a clarifying question if there are zero viable candidates or a critical constraint is missing.',

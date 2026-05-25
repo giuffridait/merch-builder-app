@@ -158,12 +158,18 @@ merch-builder-app/
 │   ├── llm.ts                      # Multi-provider LLM abstraction (chat + streaming)
 │   ├── langfuse.ts                 # Optional server-side tracing
 │   ├── agent.ts                    # ConversationState + readiness predicates
-│   ├── catalog.ts                  # Product catalog
+│   ├── catalog.ts                  # Product catalog (Classic/Premium/Eco Tee, Hoodie, Tote)
 │   ├── icons.ts                    # Icon library + keyword matching
 │   ├── design.ts                   # SVG variant templates (fallback)
 │   ├── cart.ts                     # LocalStorage cart management
 │   ├── discover.ts                 # Discovery constraint parsing + ranking
-│   └── customization-constraints.ts # Validation + allowed values
+│   ├── customization-constraints.ts # Validation + allowed values
+│   ├── inventory.ts                # Inventory data helpers
+│   ├── commerce-store.ts           # Commerce state helpers
+│   ├── ucp-capabilities.ts         # UCP capability flags
+│   ├── ucp-jsonld.ts               # UCP JSON-LD schema helpers
+│   ├── ucp-loader.ts               # UCP data loader
+│   └── url.ts                      # URL utilities
 ├── data/
 │   ├── inventory.acp.json             # Inventory schema
 │   └── ucp-capabilities.json          # Capability flags
@@ -205,7 +211,7 @@ AI: "Here are 2 options for black hoodies under €100. Top pick: Premium Hoodie
 
 ```
 User: "Navy tee with 'Dream Big' and a star icon"
-AI: "I've set up a navy Classic Tee with 'Dream Big' and a star. Here are 3 design layouts — pick your favorite or customize further."
+AI: "I've set up a navy tee with 'Dream Big' and a star. Here are 3 design layouts — pick your favorite or customize further."
 ```
 
 ### Agentic Flow (Customization)
