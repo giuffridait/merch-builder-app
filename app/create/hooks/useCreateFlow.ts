@@ -219,6 +219,50 @@ export function useCreateFlow() {
 
   const allDesigns = designs;
 
+  // ── Add to Cart ─────────────────────────────────────────────────────────────
+
+  const handleAddToCart = useCallback(() => {
+    if (!state.product) {
+      addMessage('assistant', 'Pick a product first — tee, hoodie, or tote.');
+      return;
+    }
+    if (!state.text && !state.icon) {
+      addMessage('assistant', 'Add some text or an icon to your design first.');
+      return;
+    }
+
+    // Auto-pick color if not yet selected
+    const color = selectedColor || state.product.colors[0];
+    if (!selectedColor) setSelectedColor(color);
+
+    const fallbackVariantId = designs?.[0]?.id || 'text-only';
+    const activeVariantId = selectedVariant || fallbackVariantId;
+    const variant = (designs || []).find(v => v.id === activeVariantId);
+    const designSvg = variant?.svg || (state.text ? buildTextOnlySVG(state.text) : '');
+    const itemPrice = state.product.basePrice + PRINT_FEE;
+    const isTextOnly = activeVariantId === 'text-only';
+
+    const newCart = addToCart({
+      productId: state.product.id,
+      productName: state.product.name,
+      color: color,
+      textColor: textColor || undefined,
+      size: selectedSize || state.product.sizes?.[2] || state.product.sizes?.[0] || null,
+      quantity,
+      variant: activeVariantId,
+      designSVG: designSvg,
+      text: state.text || '',
+      icon: isTextOnly ? 'none' : (state.icon || 'none'),
+      price: itemPrice,
+      total: itemPrice * quantity,
+      currency: 'EUR',
+      deliveryEstimateDays: 7
+    });
+
+    setCart(newCart);
+    addMessage('assistant', 'Awesome! Added to cart. Want to create another design or check out?');
+  }, [state, selectedColor, selectedSize, quantity, selectedVariant, designs, textColor, addMessage]);
+
   // ── Send Message (streaming) ────────────────────────────────────────────────
 
   const handleSend = useCallback(async () => {
@@ -355,50 +399,6 @@ export function useCreateFlow() {
       setIsTyping(false);
     }
   }, [input, isTyping, state, selectedColor, addMessage, handleAddToCart]);
-
-  // ── Add to Cart ─────────────────────────────────────────────────────────────
-
-  const handleAddToCart = useCallback(() => {
-    if (!state.product) {
-      addMessage('assistant', 'Pick a product first — tee, hoodie, or tote.');
-      return;
-    }
-    if (!state.text && !state.icon) {
-      addMessage('assistant', 'Add some text or an icon to your design first.');
-      return;
-    }
-
-    // Auto-pick color if not yet selected
-    const color = selectedColor || state.product.colors[0];
-    if (!selectedColor) setSelectedColor(color);
-
-    const fallbackVariantId = designs?.[0]?.id || 'text-only';
-    const activeVariantId = selectedVariant || fallbackVariantId;
-    const variant = (designs || []).find(v => v.id === activeVariantId);
-    const designSvg = variant?.svg || (state.text ? buildTextOnlySVG(state.text) : '');
-    const itemPrice = state.product.basePrice + PRINT_FEE;
-    const isTextOnly = activeVariantId === 'text-only';
-
-    const newCart = addToCart({
-      productId: state.product.id,
-      productName: state.product.name,
-      color: color,
-      textColor: textColor || undefined,
-      size: selectedSize || state.product.sizes?.[2] || state.product.sizes?.[0] || null,
-      quantity,
-      variant: activeVariantId,
-      designSVG: designSvg,
-      text: state.text || '',
-      icon: isTextOnly ? 'none' : (state.icon || 'none'),
-      price: itemPrice,
-      total: itemPrice * quantity,
-      currency: 'EUR',
-      deliveryEstimateDays: 7
-    });
-
-    setCart(newCart);
-    addMessage('assistant', 'Awesome! Added to cart. Want to create another design or check out?');
-  }, [state, selectedColor, selectedSize, quantity, selectedVariant, designs, textColor, addMessage]);
 
   // ── Quick Actions ───────────────────────────────────────────────────────────
 
